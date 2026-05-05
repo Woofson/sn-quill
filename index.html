@@ -71,7 +71,6 @@
   let isDrawing = false;
   let bridge = null;
 
-  // Defensive Bridge Init: Won't crash if ComponentRelay is missing
   try {
     if (typeof ComponentRelay !== 'undefined') {
       bridge = new ComponentRelay({
@@ -84,12 +83,25 @@
   }
 
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    // Maintain background color on resize
+    const dpr = window.devicePixelRatio || 1;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Set internal resolution based on screen density
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+
+    // Set CSS display size
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    // Scale context to draw at native resolution
+    ctx.scale(dpr, dpr);
+
     ctx.fillStyle = '#fdfcf0';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Reload saved content if it exists
+    ctx.fillRect(0, 0, width, height);
+    
+    // Refresh content after resize
     render();
   }
 
@@ -112,9 +124,8 @@
       ctx.lineWidth = 40;
     } else {
       ctx.strokeStyle = document.getElementById('penColor').value;
-      // Use S-Pen pressure if available, else default to 3px
       const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 6 * pressure;
+      ctx.lineWidth = 4 * pressure;
     }
     
     ctx.moveTo(pos.x, pos.y);
@@ -127,7 +138,7 @@
     
     if (document.getElementById('tool').value === 'pen') {
       const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 6 * pressure;
+      ctx.lineWidth = 4 * pressure;
     }
     
     ctx.lineTo(pos.x, pos.y);
@@ -142,17 +153,14 @@
     }
   }
 
-  // Unified Listeners
   canvas.addEventListener('pointerdown', start);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', stop);
-  
-  // Mobile Gesture Kill
   canvas.addEventListener('touchstart', (e) => { if(e.cancelable) e.preventDefault(); }, {passive: false});
 
   document.getElementById('clearBtn').onclick = () => {
     ctx.fillStyle = '#fdfcf0';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
     save();
   };
 
@@ -175,7 +183,7 @@
             const data = JSON.parse(item.content.text);
             if (data.imageData) {
               const img = new Image();
-              img.onload = () => ctx.drawImage(img, 0, 0);
+              img.onload = () => ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
               img.src = data.imageData;
             }
           } catch(e) {}
