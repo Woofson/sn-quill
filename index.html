@@ -2,64 +2,137 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <script src="https://app.standardnotes.com/component-relay.js"></script>
   <style>
-    body { margin: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; touch-action: none; }
-    #toolbar {
-      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-      background: #222; padding: 10px; border-radius: 20px; z-index: 10;
-      display: flex; gap: 10px; border: 1px solid #444;
+    :root {
+      --paper-white: #fdfcf0;
     }
-    #hwCanvas { background: #fdfcf0; display: block; margin: 0 auto; cursor: crosshair; touch-action: none; }
-    select { background: #333; color: white; border: 1px solid #555; padding: 5px; }
+
+    body, html { 
+      margin: 0; padding: 0; height: 100%; 
+      background: #1a1a1a; overflow: hidden; 
+      font-family: -apple-system, sans-serif;
+      touch-action: none;
+    }
+
+    #toolbar {
+      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+      background: #222; padding: 8px 15px; border-radius: 25px; 
+      display: flex; gap: 10px; z-index: 100; border: 1px solid #444;
+      align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #canvas-container {
+      height: 100vh; width: 100vw; display: flex; 
+      justify-content: center; align-items: flex-start;
+    }
+
+    canvas {
+      background-color: var(--paper-white);
+      touch-action: none;
+      display: block;
+      cursor: crosshair;
+    }
+
+    select, button { 
+      background: #333; color: #eee; border: 1px solid #555; 
+      padding: 5px 10px; border-radius: 6px; font-size: 13px;
+    }
+
+    .brand { color: #fff; font-weight: bold; margin-right: 5px; font-size: 12px; opacity: 0.8; }
   </style>
 </head>
 <body>
 
 <div id="toolbar">
+  <span class="brand">QUILL</span>
   <select id="penColor">
-    <option value="#000000">Black</option>
-    <option value="#0000FF">Blue</option>
+    <option value="#18181b">Black</option>
+    <option value="#1e3a8a">Blue</option>
+    <option value="#b91c1c">Red</option>
   </select>
-  <button id="clearBtn" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:4px;">Clear</button>
+  
+  <select id="tool">
+    <option value="pen">Pen</option>
+    <option value="eraser">Eraser</option>
+  </select>
+
+  <button id="clearBtn">Clear</button>
 </div>
 
-<canvas id="hwCanvas"></canvas>
+<div id="canvas-container">
+  <canvas id="hwCanvas"></canvas>
+</div>
 
 <script>
   const canvas = document.getElementById('hwCanvas');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
+  let bridge = null;
 
-  // Bridge init
-  const bridge = new ComponentRelay({
-    targetWindow: window,
-    onReady: () => { console.log("Bridge Ready"); }
-  });
+  // Defensive Bridge Init: Won't crash if ComponentRelay is missing
+  try {
+    if (typeof ComponentRelay !== 'undefined') {
+      bridge = new ComponentRelay({
+        targetWindow: window,
+        onReady: () => { console.log("Bridge Active"); }
+      });
+    }
+  } catch (e) {
+    console.warn("Relay unavailable - Standalone mode.");
+  }
 
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    // Maintain background color on resize
     ctx.fillStyle = '#fdfcf0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Reload saved content if it exists
+    render();
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
   function start(e) {
     isDrawing = true;
+    const pos = getPos(e);
     ctx.beginPath();
-    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = document.getElementById('penColor').value;
-    ctx.moveTo(e.clientX, e.clientY);
-    e.preventDefault();
+    ctx.lineJoin = 'round';
+    
+    if (document.getElementById('tool').value === 'eraser') {
+      ctx.strokeStyle = '#fdfcf0';
+      ctx.lineWidth = 40;
+    } else {
+      ctx.strokeStyle = document.getElementById('penColor').value;
+      // Use S-Pen pressure if available, else default to 3px
+      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      ctx.lineWidth = 6 * pressure;
+    }
+    
+    ctx.moveTo(pos.x, pos.y);
+    if (e.cancelable) e.preventDefault();
   }
 
   function move(e) {
     if (!isDrawing) return;
-    ctx.lineTo(e.clientX, e.clientY);
+    const pos = getPos(e);
+    
+    if (document.getElementById('tool').value === 'pen') {
+      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      ctx.lineWidth = 6 * pressure;
+    }
+    
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
   }
 
   function stop() {
@@ -69,10 +142,13 @@
     }
   }
 
-  // Basic Listeners
+  // Unified Listeners
   canvas.addEventListener('pointerdown', start);
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', stop);
+  
+  // Mobile Gesture Kill
+  canvas.addEventListener('touchstart', (e) => { if(e.cancelable) e.preventDefault(); }, {passive: false});
 
   document.getElementById('clearBtn').onclick = () => {
     ctx.fillStyle = '#fdfcf0';
@@ -81,32 +157,35 @@
   };
 
   function save() {
-    bridge.saveItemWithPayload({
-      content: {
-        text: JSON.stringify({ imageData: canvas.toDataURL("image/png") }),
-        preview_title: "Quill Sketch"
-      }
-    });
+    if (bridge) {
+      bridge.saveItemWithPayload({
+        content: {
+          text: JSON.stringify({ imageData: canvas.toDataURL("image/png") }),
+          preview_title: "Quill Sketch"
+        }
+      });
+    }
   }
 
   function render() {
-    bridge.streamContextItem((item) => {
-      if (item.content.text) {
-        try {
-          const data = JSON.parse(item.content.text);
-          if (data.imageData) {
-            const img = new Image();
-            img.onload = () => ctx.drawImage(img, 0, 0);
-            img.src = data.imageData;
-          }
-        } catch(e) {}
-      }
-    });
+    if (bridge) {
+      bridge.streamContextItem((item) => {
+        if (item.content.text) {
+          try {
+            const data = JSON.parse(item.content.text);
+            if (data.imageData) {
+              const img = new Image();
+              img.onload = () => ctx.drawImage(img, 0, 0);
+              img.src = data.imageData;
+            }
+          } catch(e) {}
+        }
+      });
+    }
   }
 
   window.addEventListener('resize', resize);
   resize();
-  render();
 </script>
 </body>
 </html>
