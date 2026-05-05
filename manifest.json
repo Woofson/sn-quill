@@ -2,9 +2,14 @@
   "name": "Quill",
   "identifier": "ac.arf.quill.sn",
   "version": "1.0.0",
-  "description": "A precision handwriting plugin with construction-style templates.",
+  "description": "A precision handwriting plugin.",
   "content_type": "SN|Component",
   "area": "editor-editor",
   "url": "https://woofson.github.io/sn-quill/index.html",
-  "ui_type": "canvas"
+  "ui_type": "canvas",
+  "permissions": [
+    {
+      "name": "stream-context-item"
+    }
+  ]
 }
