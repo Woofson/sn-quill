@@ -1,264 +1,248 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
-        <script src="https://app.standardnotes.com/component-relay.js"></script>
-        <style>
-            :root {
-                --paper-white: #fdfcf0;
-                --pale-yellow: #fef9c3;
-                --const-blue: #2b4570;
-                --ink-black: #18181b;
-                --ink-blue: #1e3a8a;
-                --ink-red: #b91c1c;
-                --grid-color: rgba(0, 0, 0, 0.1);
-            }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <script src="https://app.standardnotes.com/component-relay.js"></script>
+  <style>
+    :root {
+      --paper-white: #fdfcf0;
+      --pale-yellow: #fef9c3;
+      --const-blue: #2b4570;
+      --ink-black: #18181b;
+      --ink-blue: #1e3a8a;
+      --ink-red: #b91c1c;
+      --grid-color: rgba(0, 0, 0, 0.08);
+    }
 
-            body,
-            html {
-                margin: 0;
-                padding: 0;
-                height: 100%;
-                background: #1a1a1a;
-                overflow: hidden;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            }
+    body, html { 
+      margin: 0; padding: 0; height: 100%; 
+      background: #1a1a1a; overflow: hidden; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-            #toolbar {
-                position: fixed;
-                top: 15px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(30, 30, 30, 0.95);
-                backdrop-filter: blur(8px);
-                padding: 10px 20px;
-                border-radius: 30px;
-                display: flex;
-                gap: 15px;
-                z-index: 100;
-                border: 1px solid #333;
-                align-items: center;
-                color: #eee;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            }
+    #toolbar {
+      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+      background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
+      padding: 8px 18px; border-radius: 30px; display: flex; gap: 12px;
+      z-index: 100; border: 1px solid #444; align-items: center; color: #eee;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
 
-            #canvas-container {
-                height: 100vh;
-                width: 100vw;
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                overflow-y: auto;
-                padding-top: 80px;
-                scroll-behavior: smooth;
-            }
+    #canvas-container {
+      height: 100vh; width: 100vw; display: flex; 
+      justify-content: center; align-items: flex-start; 
+      overflow-y: auto; padding-top: 80px; -webkit-overflow-scrolling: touch;
+    }
 
-            canvas {
-                background-color: var(--paper-white);
-                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-                touch-action: none;
-                cursor: crosshair;
-                transition: background-color 0.2s ease;
-            }
+    canvas {
+      background-color: var(--paper-white);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      touch-action: none; /* Prevents browser gestures */
+      cursor: crosshair;
+      transition: background-color 0.2s ease;
+      display: block;
+    }
 
-            /* Template Textures */
-            .tpl-lines {
-                background-image: linear-gradient(
-                    var(--grid-color) 1px,
-                    transparent 1px
-                );
-                background-size: 100% 32px;
-            }
-            .tpl-grid {
-                background-image: radial-gradient(
-                    var(--grid-color) 1.5px,
-                    transparent 1.5px
-                );
-                background-size: 25px 25px;
-            }
+    /* Page Textures */
+    .tpl-lines {
+      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px);
+      background-size: 100% 32px;
+    }
+    .tpl-grid {
+      background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px);
+      background-size: 28px 28px;
+    }
 
-            select,
-            button {
-                background: #333;
-                color: #ddd;
-                border: 1px solid #444;
-                padding: 6px 12px;
-                border-radius: 6px;
-                font-size: 13px;
-                outline: none;
-            }
-            select:focus {
-                border-color: #666;
-            }
+    select, button {
+      background: #333; color: #ddd; border: 1px solid #444; 
+      padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none;
+    }
+    
+    .brand { font-weight: 800; color: #fff; margin-right: 4px; letter-spacing: 1px; font-size: 14px; }
+  </style>
+</head>
+<body>
 
-            .brand {
-                font-weight: 700;
-                color: #fff;
-                margin-right: 5px;
-                letter-spacing: 0.5px;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="toolbar">
-            <span class="brand">QUILL</span>
+<div id="toolbar">
+  <span class="brand">QUILL</span>
+  
+  <select id="penColor">
+    <option value="#18181b">Ink Black</option>
+    <option value="#1e3a8a">Blue Print</option>
+    <option value="#b91c1c">Red Pen</option>
+  </select>
+  
+  <select id="tool">
+    <option value="pen">Pen</option>
+    <option value="eraser">Eraser</option>
+  </select>
 
-            <select id="penColor">
-                <option value="#18181b">Ink Black</option>
-                <option value="#1e3a8a">Blue Print</option>
-                <option value="#b91c1c">Red Pen</option>
-            </select>
+  <select id="paperColor" onchange="updatePaper()">
+    <option value="white">Milled White</option>
+    <option value="yellow">Legal Yellow</option>
+    <option value="blue">Const. Blue</option>
+  </select>
 
-            <select id="tool">
-                <option value="pen">Pen</option>
-                <option value="eraser">Eraser</option>
-            </select>
+  <select id="template" onchange="updatePaper()">
+    <option value="blank">Blank</option>
+    <option value="lines">Lines</option>
+    <option value="grid">Grid</option>
+  </select>
+</div>
 
-            <select id="paperColor" onchange="updatePaper()">
-                <option value="white">Milled White</option>
-                <option value="yellow">Legal Yellow</option>
-                <option value="blue">Const. Blue</option>
-            </select>
+<div id="canvas-container">
+  <canvas id="hwCanvas"></canvas>
+</div>
 
-            <select id="template" onchange="updatePaper()">
-                <option value="blank">Blank</option>
-                <option value="lines">Lines</option>
-                <option value="grid">Grid</option>
-            </select>
-        </div>
+<script>
+  const canvas = document.getElementById('hwCanvas');
+  const ctx = canvas.getContext('2d', { alpha: false }); // Optimization
+  let isDrawing = false;
+  let noteData = { 
+    paper: 'white', 
+    template: 'blank', 
+    imageData: null 
+  };
 
-        <div id="canvas-container">
-            <canvas id="hwCanvas"></canvas>
-        </div>
+  const bridge = new ComponentRelay({
+    targetWindow: window,
+    onReady: () => { console.log("Quill online."); }
+  });
 
-        <script>
-            const canvas = document.getElementById("hwCanvas");
-            const ctx = canvas.getContext("2d");
-            let isDrawing = false;
-            let noteData = {
-                paper: "white",
-                template: "blank",
-                orientation: "vertical",
-            };
+  function initCanvas() {
+    // Standard A4-ish proportions
+    canvas.width = 850;
+    canvas.height = 1200;
+    
+    // Fill initial background to prevent transparency artifacts
+    ctx.fillStyle = '#fdfcf0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    render();
+  }
 
-            const bridge = new ComponentRelay({
-                targetWindow: window,
-                onReady: () => {
-                    console.log("Quill system initialized.");
-                },
-            });
+  function updatePaper() {
+    const paper = document.getElementById('paperColor').value;
+    const tpl = document.getElementById('template').value;
+    
+    canvas.style.backgroundColor = `var(--paper-${paper})`;
+    
+    const gridOpacity = paper === 'blue' ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
+    document.documentElement.style.setProperty('--grid-color', gridOpacity);
+    
+    canvas.className = '';
+    if (tpl !== 'blank') canvas.classList.add(`tpl-${tpl}`);
+    
+    noteData.paper = paper;
+    noteData.template = tpl;
+    save();
+  }
 
-            function initCanvas() {
-                // Setup A4 Vertical default
-                canvas.width = 800;
-                canvas.height = 1131;
-                render();
-            }
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    // Scale coordinates in case CSS has resized the canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
 
-            function updatePaper() {
-                const paper = document.getElementById("paperColor").value;
-                const tpl = document.getElementById("template").value;
+  function startDrawing(e) {
+    // Basic palm rejection: only first touch point
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
+    
+    isDrawing = true;
+    const tool = document.getElementById('tool').value;
+    const pos = getPos(e);
+    
+    ctx.beginPath();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    if (tool === 'eraser') {
+      ctx.strokeStyle = getComputedStyle(canvas).backgroundColor;
+      ctx.globalAlpha = 0.6; // Ghosting effect
+      ctx.lineWidth = 40;
+    } else {
+      ctx.strokeStyle = document.getElementById('penColor').value;
+      ctx.globalAlpha = 1.0;
+      // Use pressure if available, otherwise default to a medium nib
+      const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = 3.5 * pressure; 
+    }
+    
+    ctx.moveTo(pos.x, pos.y);
+    if (e.cancelable) e.preventDefault();
+  }
 
-                canvas.style.backgroundColor = `var(--paper-${paper})`;
+  function moveDrawing(e) {
+    if (!isDrawing) return;
+    const pos = getPos(e);
+    
+    if (document.getElementById('tool').value === 'pen') {
+      const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = 3.5 * pressure;
+    }
+    
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    if (e.cancelable) e.preventDefault();
+  }
 
-                // Adjust grid contrast for Blue mode
-                const gridOpacity =
-                    paper === "blue"
-                        ? "rgba(255,255,255,0.15)"
-                        : "rgba(0,0,0,0.08)";
-                document.documentElement.style.setProperty(
-                    "--grid-color",
-                    gridOpacity,
-                );
+  function stopDrawing() {
+    if (isDrawing) {
+      isDrawing = false;
+      ctx.closePath();
+      save();
+    }
+  }
 
-                canvas.className = "";
-                if (tpl !== "blank") canvas.classList.add(`tpl-${tpl}`);
+  // Unified Event Listeners
+  canvas.addEventListener('pointerdown', startDrawing);
+  window.addEventListener('pointermove', moveDrawing);
+  window.addEventListener('pointerup', stopDrawing);
+  
+  // Mobile-specific touch fixes
+  canvas.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
 
-                noteData.paper = paper;
-                noteData.template = tpl;
-                save();
-            }
+  function save() {
+    bridge.saveItemWithPayload({
+      content: {
+        text: JSON.stringify({
+          ...noteData,
+          imageData: canvas.toDataURL("image/webp", 0.6)
+        }),
+        preview_title: "Quill Sketch"
+      }
+    });
+  }
 
-            canvas.addEventListener("pointerdown", (e) => {
-                // Basic palm rejection: Ignore secondary touches
-                if (e.pointerType === "touch" && !e.isPrimary) return;
+  function render() {
+    bridge.streamContextItem((item) => {
+      if (item.content.text) {
+        try {
+          const data = JSON.parse(item.content.text);
+          if (data.imageData) {
+            const img = new Image();
+            img.onload = () => ctx.drawImage(img, 0, 0);
+            img.src = data.imageData;
+          }
+          if (data.paper) document.getElementById('paperColor').value = data.paper;
+          if (data.template) document.getElementById('template').value = data.template;
+          updatePaper();
+        } catch(e) { console.log("New Note"); }
+      }
+    });
+  }
 
-                isDrawing = true;
-                const tool = document.getElementById("tool").value;
-
-                ctx.beginPath();
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-
-                if (tool === "eraser") {
-                    ctx.strokeStyle = `var(--paper-${noteData.paper})`;
-                    ctx.globalAlpha = 0.5; // "Real life" partial erase
-                    ctx.lineWidth = 30;
-                } else {
-                    ctx.strokeStyle = document.getElementById("penColor").value;
-                    ctx.globalAlpha = 1.0;
-                    // Precision pressure sensitivity logic
-                    ctx.lineWidth = 2.5 * (e.pressure || 0.5);
-                }
-
-                ctx.moveTo(e.offsetX, e.offsetY);
-            });
-
-            canvas.addEventListener("pointermove", (e) => {
-                if (!isDrawing) return;
-
-                if (document.getElementById("tool").value === "pen") {
-                    ctx.lineWidth = 2.5 * (e.pressure || 0.5);
-                }
-
-                ctx.lineTo(e.offsetX, e.offsetY);
-                ctx.stroke();
-            });
-
-            canvas.addEventListener("pointerup", () => {
-                isDrawing = false;
-                save();
-            });
-
-            function save() {
-                bridge.saveItemWithPayload({
-                    content: {
-                        text: JSON.stringify({
-                            ...noteData,
-                            imageData: canvas.toDataURL("image/webp", 0.6),
-                        }),
-                        preview_title: "Quill Sketch",
-                    },
-                });
-            }
-
-            function render() {
-                bridge.streamContextItem((item) => {
-                    if (item.content.text) {
-                        try {
-                            const data = JSON.parse(item.content.text);
-                            if (data.imageData) {
-                                const img = new Image();
-                                img.onload = () => ctx.drawImage(img, 0, 0);
-                                img.src = data.imageData;
-                            }
-                            document.getElementById("paperColor").value =
-                                data.paper || "white";
-                            document.getElementById("template").value =
-                                data.template || "blank";
-                            updatePaper();
-                        } catch (e) {
-                            console.log("New Quill note.");
-                        }
-                    }
-                });
-            }
-
-            initCanvas();
-        </script>
-    </body>
+  initCanvas();
+</script>
+</body>
 </html>
