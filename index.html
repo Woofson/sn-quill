@@ -7,70 +7,47 @@
   <style>
     :root {
       --paper-white: #fdfcf0;
-      --pale-yellow: #fef9c3;
-      --const-blue: #2b4570;
-      --ink-black: #18181b;
-      --ink-blue: #1e3a8a;
-      --ink-red: #b91c1c;
       --grid-color: rgba(0, 0, 0, 0.08);
     }
 
     body, html { 
       margin: 0; padding: 0; height: 100%; 
       background: #1a1a1a; overflow: hidden; 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: sans-serif;
     }
 
     #toolbar {
-      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-      background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
-      padding: 8px 18px; border-radius: 30px; display: flex; gap: 12px;
-      z-index: 100; border: 1px solid #444; align-items: center; color: #eee;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: #222; padding: 8px 15px; border-radius: 25px; 
+      display: flex; gap: 10px; z-index: 100; border: 1px solid #444;
+      align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
 
     #canvas-container {
       height: 100vh; width: 100vw; display: flex; 
       justify-content: center; align-items: flex-start; 
-      overflow-y: auto; padding-top: 80px; -webkit-overflow-scrolling: touch;
+      overflow: auto; padding-top: 70px;
     }
 
     canvas {
       background-color: var(--paper-white);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      touch-action: none; /* Prevents browser gestures */
-      cursor: crosshair;
-      transition: background-color 0.2s ease;
+      touch-action: none;
       display: block;
     }
 
-    /* Page Textures */
-    .tpl-lines {
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px);
-      background-size: 100% 32px;
-    }
-    .tpl-grid {
-      background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px);
-      background-size: 28px 28px;
-    }
+    .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px); background-size: 100% 32px; }
+    .tpl-grid { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px); background-size: 28px 28px; }
 
-    select, button {
-      background: #333; color: #ddd; border: 1px solid #444; 
-      padding: 6px 10px; border-radius: 6px; font-size: 13px; outline: none;
-    }
-    
-    .brand { font-weight: 800; color: #fff; margin-right: 4px; letter-spacing: 1px; font-size: 14px; }
+    select { background: #333; color: #eee; border: 1px solid #555; padding: 5px; border-radius: 4px; }
   </style>
 </head>
 <body>
 
 <div id="toolbar">
-  <span class="brand">QUILL</span>
-  
   <select id="penColor">
-    <option value="#18181b">Ink Black</option>
-    <option value="#1e3a8a">Blue Print</option>
-    <option value="#b91c1c">Red Pen</option>
+    <option value="#18181b">Black</option>
+    <option value="#1e3a8a">Blue</option>
+    <option value="#b91c1c">Red</option>
   </select>
   
   <select id="tool">
@@ -79,9 +56,8 @@
   </select>
 
   <select id="paperColor" onchange="updatePaper()">
-    <option value="white">Milled White</option>
-    <option value="yellow">Legal Yellow</option>
-    <option value="blue">Const. Blue</option>
+    <option value="white">White</option>
+    <option value="yellow">Yellow</option>
   </select>
 
   <select id="template" onchange="updatePaper()">
@@ -97,128 +73,88 @@
 
 <script>
   const canvas = document.getElementById('hwCanvas');
-  const ctx = canvas.getContext('2d', { alpha: false }); // Optimization
+  const ctx = canvas.getContext('2d');
   let isDrawing = false;
-  let noteData = { 
-    paper: 'white', 
-    template: 'blank', 
-    imageData: null 
-  };
+  let noteData = { paper: 'white', template: 'blank', imageData: null };
 
   const bridge = new ComponentRelay({
     targetWindow: window,
-    onReady: () => { console.log("Quill online."); }
+    onReady: () => { console.log("Quill Ready"); }
   });
 
-  function initCanvas() {
-    // Standard A4-ish proportions
+  function init() {
     canvas.width = 850;
     canvas.height = 1200;
-    
-    // Fill initial background to prevent transparency artifacts
     ctx.fillStyle = '#fdfcf0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
     render();
   }
 
   function updatePaper() {
     const paper = document.getElementById('paperColor').value;
     const tpl = document.getElementById('template').value;
-    
-    canvas.style.backgroundColor = `var(--paper-${paper})`;
-    
-    const gridOpacity = paper === 'blue' ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
-    document.documentElement.style.setProperty('--grid-color', gridOpacity);
-    
-    canvas.className = '';
-    if (tpl !== 'blank') canvas.classList.add(`tpl-${tpl}`);
-    
+    canvas.style.backgroundColor = paper === 'yellow' ? '#fef9c3' : '#fdfcf0';
+    canvas.className = tpl !== 'blank' ? `tpl-${tpl}` : '';
     noteData.paper = paper;
     noteData.template = tpl;
-    save();
   }
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
+    // Support S-Pen (Pointer) and Finger (Touch)
     const clientX = e.clientX || (e.touches && e.touches[0].clientX);
     const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    // Scale coordinates in case CSS has resized the canvas
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
   }
 
-  function startDrawing(e) {
-    // Basic palm rejection: only first touch point
-    if (e.pointerType === 'touch' && !e.isPrimary) return;
-    
+  function start(e) {
     isDrawing = true;
-    const tool = document.getElementById('tool').value;
     const pos = getPos(e);
-    
     ctx.beginPath();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
-    if (tool === 'eraser') {
-      ctx.strokeStyle = getComputedStyle(canvas).backgroundColor;
-      ctx.globalAlpha = 0.6; // Ghosting effect
+    if (document.getElementById('tool').value === 'eraser') {
+      ctx.strokeStyle = canvas.style.backgroundColor || '#fdfcf0';
       ctx.lineWidth = 40;
     } else {
       ctx.strokeStyle = document.getElementById('penColor').value;
-      ctx.globalAlpha = 1.0;
-      // Use pressure if available, otherwise default to a medium nib
-      const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
-      ctx.lineWidth = 3.5 * pressure; 
+      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      ctx.lineWidth = 3 * pressure;
     }
-    
     ctx.moveTo(pos.x, pos.y);
-    if (e.cancelable) e.preventDefault();
   }
 
-  function moveDrawing(e) {
+  function move(e) {
     if (!isDrawing) return;
     const pos = getPos(e);
-    
     if (document.getElementById('tool').value === 'pen') {
-      const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
-      ctx.lineWidth = 3.5 * pressure;
+      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      ctx.lineWidth = 3 * pressure;
     }
-    
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    if (e.cancelable) e.preventDefault();
   }
 
-  function stopDrawing() {
+  function stop() {
     if (isDrawing) {
       isDrawing = false;
-      ctx.closePath();
       save();
     }
   }
 
-  // Unified Event Listeners
-  canvas.addEventListener('pointerdown', startDrawing);
-  window.addEventListener('pointermove', moveDrawing);
-  window.addEventListener('pointerup', stopDrawing);
-  
-  // Mobile-specific touch fixes
-  canvas.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  // Samsung S25U S-Pen works best with PointerEvents
+  canvas.addEventListener('pointerdown', start);
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('pointerup', stop);
+  canvas.addEventListener('pointerout', stop);
 
   function save() {
     bridge.saveItemWithPayload({
       content: {
-        text: JSON.stringify({
-          ...noteData,
-          imageData: canvas.toDataURL("image/webp", 0.6)
-        }),
+        text: JSON.stringify({ ...noteData, imageData: canvas.toDataURL("image/png") }),
         preview_title: "Quill Sketch"
       }
     });
@@ -234,15 +170,12 @@
             img.onload = () => ctx.drawImage(img, 0, 0);
             img.src = data.imageData;
           }
-          if (data.paper) document.getElementById('paperColor').value = data.paper;
-          if (data.template) document.getElementById('template').value = data.template;
-          updatePaper();
-        } catch(e) { console.log("New Note"); }
+        } catch(e) {}
       }
     });
   }
 
-  initCanvas();
+  init();
 </script>
 </body>
 </html>
