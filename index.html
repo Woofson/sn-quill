@@ -11,7 +11,6 @@
     }
     body, html { margin: 0; padding: 0; height: 100%; background: #111; overflow: hidden; font-family: sans-serif; touch-action: none; }
     
-    /* Fixed Toolbar */
     #toolbar {
       position: fixed; top: 20px; left: 20px; background: var(--bg-panel); 
       backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -39,7 +38,7 @@
     .popover {
       position: absolute; background: #1e1e1e; border: 1px solid #333; border-radius: 16px;
       padding: 18px; display: none; flex-direction: column; gap: 12px; z-index: 110;
-      box-shadow: 0 15px 45px rgba(0,0,0,0.7); color: white; width: 200px;
+      box-shadow: 0 15px 45px rgba(0,0,0,0.7); color: white; width: 220px;
     }
     .popover label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
     .val-display { float: right; color: var(--accent); font-family: monospace; }
@@ -48,7 +47,13 @@
     .swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
     .swatch.selected { border-color: var(--accent); transform: scale(1.1); }
 
-    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; background: var(--paper-white); }
+    #settingsModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
+      display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px);
+    }
+    .modal-content { background: #1e1e1e; width: 90%; max-width: 360px; padding: 30px; border-radius: 28px; border: 1px solid #333; color: #eee; }
+
+    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
     canvas { position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; }
     
     #cursor-guide {
@@ -56,8 +61,16 @@
       border-radius: 50%; z-index: 9999; transform: translate(-50%, -50%); display: none;
       background: rgba(255, 255, 255, 0.05);
     }
+
     input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .danger-btn { background: rgba(255, 85, 85, 0.1); color: #ff5555; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 11px; text-align: center; border: 1px solid rgba(255, 85, 85, 0.2); }
+    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    select { background: #2a2a2a; color: #eee; border: 1px solid #444; padding: 10px; border-radius: 10px; width: 60%; }
+    .danger-btn { background: rgba(255, 85, 85, 0.1); color: #ff5555; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 11px; text-align: center; border: 1px solid rgba(255, 85, 85, 0.2); }
+
+    /* Templates */
+    .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
+    .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
+    .tpl-dots { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important; background-size: 32px 32px !important; }
   </style>
 </head>
 <body>
@@ -73,9 +86,9 @@
   <div style="width:1px; height:20px; background:rgba(255,255,255,0.1);"></div>
   <div id="undoBtn" class="tool-btn"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></div>
   <div id="redoBtn" class="tool-btn"><svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg></div>
+  <div id="settingsBtn" class="tool-btn"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
 </div>
 
-<!-- Pen Popover -->
 <div id="penPopover" class="popover">
   <label>Ink Color</label>
   <div class="color-grid">
@@ -87,20 +100,33 @@
   </div>
   <label style="margin-top:10px">Width <span id="lwVal" class="val-display">4</span></label>
   <input type="range" id="lineWidth" min="1" max="40" value="4">
+  <div class="row" style="margin-top:10px; margin-bottom:0;">
+    <label>Pressure Sensitivity</label>
+    <input type="checkbox" id="usePressure" checked>
+  </div>
 </div>
 
-<!-- Eraser Popover -->
 <div id="eraserPopover" class="popover">
   <label>Eraser Size <span id="esVal" class="val-display">40</span></label>
   <input type="range" id="eraserSize" min="5" max="150" value="40">
   <div id="clearBtn" class="danger-btn" style="margin-top:10px">Clear Page</div>
 </div>
 
+<div id="settingsModal">
+  <div class="modal-content">
+    <h3 style="margin-top:0">Notebook Settings</h3>
+    <div class="row"><label>Orientation</label><select id="setOrient"><option value="horiz">Horizontal</option><option value="vert">Vertical</option></select></div>
+    <div class="row"><label>Paper Color</label><select id="paperColor"><option value="white">White</option><option value="yellow">Post-it</option><option value="blue">Blue</option></select></div>
+    <div class="row"><label>Template</label><select id="template"><option value="blank">Blank</option><option value="lines">Lines</option><option value="grid">Grid</option><option value="dots">Dots</option></select></div>
+    <button id="closeSettings" style="width:100%; padding:14px; background:var(--accent); border:none; color:white; border-radius:12px; font-weight:600; cursor:pointer;">Apply Changes</button>
+  </div>
+</div>
+
 <div id="page-nav">
   <div id="prevPage" class="tool-btn" style="width:32px; height:32px;">◀</div>
   <span id="pageDisplay">Page 1</span>
   <div id="nextPage" class="tool-btn" style="width:32px; height:32px;">▶</div>
-  <div id="resetView" class="tool-btn" style="width:32px; height:32px; margin-left:8px;" title="Reset View">⌖</div>
+  <div id="resetView" class="tool-btn" style="width:32px; height:32px; margin-left:8px;">⌖</div>
 </div>
 
 <div id="canvas-container"><canvas id="hwCanvas"></canvas></div>
@@ -109,17 +135,14 @@
   const canvas = document.getElementById('hwCanvas'), ctx = canvas.getContext('2d'), toolbar = document.getElementById('toolbar'), guide = document.getElementById('cursor-guide');
   let bridge = null, tool = 'pen', isDrawing = false, isDraggingMenu = false, pressTimer;
   
-  // State
   let scale = 1, offsetX = 0, offsetY = 0;
   let pages = [[]], redoStack = [], currentPage = 0;
-  let config = { width: 4, eraser: 40, ink: '#18181b' };
+  let config = { width: 4, eraser: 40, ink: '#18181b', pressure: true, paper: 'white', template: 'blank', orient: 'horiz' };
 
   function initCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px'; canvas.style.height = window.innerHeight + 'px';
     redraw();
   }
 
@@ -127,28 +150,26 @@
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.translate(offsetX, offsetY);
-    ctx.scale(scale, scale);
+    ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
 
     (pages[currentPage] || []).forEach(stroke => {
       if (stroke.points.length < 2) return;
       ctx.beginPath();
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width;
       ctx.globalCompositeOperation = stroke.type === 'eraser' ? 'destination-out' : 'source-over';
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for(let i=1; i<stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      
+      stroke.points.forEach((p, i) => {
+        ctx.lineWidth = p.p ? stroke.width * p.p : stroke.width;
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
       ctx.stroke();
     });
   }
 
-  function screenToCanvas(x, y) {
-    return { x: (x - offsetX) / scale, y: (y - offsetY) / scale };
-  }
+  function screenToCanvas(x, y) { return { x: (x - offsetX) / scale, y: (y - offsetY) / scale }; }
 
-  // --- Toolbar Interaction Fix ---
   function setupLongPress(btn, popover) {
     btn.onpointerdown = (e) => {
       pressTimer = setTimeout(() => {
@@ -165,27 +186,22 @@
   setupLongPress(document.getElementById('penBtn'), document.getElementById('penPopover'));
   setupLongPress(document.getElementById('eraserBtn'), document.getElementById('eraserPopover'));
 
-  // Drawing
   canvas.onpointerdown = (e) => {
     if (e.target !== canvas || isDraggingMenu) return;
     isDrawing = true;
     const pos = screenToCanvas(e.clientX, e.clientY);
-    pages[currentPage].push({
-      type: tool,
-      color: config.ink,
-      width: tool === 'eraser' ? config.eraser : config.width,
-      points: [pos]
-    });
+    const p = config.pressure && e.pressure > 0 ? e.pressure : null;
+    pages[currentPage].push({ type: tool, color: config.ink, width: tool === 'eraser' ? config.eraser : config.width, points: [{...pos, p}] });
     redoStack = [];
   };
 
   window.onpointermove = (e) => {
     if (isDrawing) {
       const pos = screenToCanvas(e.clientX, e.clientY);
-      pages[currentPage][pages[currentPage].length - 1].points.push(pos);
+      const p = config.pressure && e.pressure > 0 ? e.pressure : null;
+      pages[currentPage][pages[currentPage].length - 1].points.push({...pos, p});
       redraw();
     }
-    // Guide
     guide.style.display = 'block';
     guide.style.left = e.clientX + 'px'; guide.style.top = e.clientY + 'px';
     const s = (tool === 'eraser' ? config.eraser : config.width) * scale;
@@ -195,73 +211,53 @@
 
   window.onpointerup = () => { if(isDrawing) { isDrawing = false; save(); } };
 
-  // Zoom / Pan
   window.onwheel = (e) => {
     e.preventDefault();
     const zoom = e.deltaY > 0 ? 0.9 : 1.1;
-    const mouse = { x: e.clientX, y: e.clientY };
-    const before = screenToCanvas(mouse.x, mouse.y);
+    const before = screenToCanvas(e.clientX, e.clientY);
     scale *= zoom;
-    const after = screenToCanvas(mouse.x, mouse.y);
-    offsetX += (after.x - before.x) * scale;
-    offsetY += (after.y - before.y) * scale;
+    const after = screenToCanvas(e.clientX, e.clientY);
+    offsetX += (after.x - before.x) * scale; offsetY += (after.y - before.y) * scale;
     redraw();
   };
 
-  // UI Updates
-  document.getElementById('lineWidth').oninput = (e) => {
-    config.width = e.target.value;
-    document.getElementById('lwVal').innerText = e.target.value;
-  };
-  document.getElementById('eraserSize').oninput = (e) => {
-    config.eraser = e.target.value;
-    document.getElementById('esVal').innerText = e.target.value;
-  };
+  // UI Handlers
+  document.getElementById('lineWidth').oninput = (e) => { config.width = e.target.value; document.getElementById('lwVal').innerText = e.target.value; };
+  document.getElementById('eraserSize').oninput = (e) => { config.eraser = e.target.value; document.getElementById('esVal').innerText = e.target.value; };
+  document.getElementById('usePressure').onchange = (e) => { config.pressure = e.target.checked; };
+  document.getElementById('settingsBtn').onclick = () => { document.getElementById('settingsModal').style.display = 'flex'; };
+  document.getElementById('closeSettings').onclick = () => { document.getElementById('settingsModal').style.display = 'none'; updateUI(); save(); };
+
+  function updateUI() {
+    config.paper = document.getElementById('paperColor').value;
+    config.template = document.getElementById('template').value;
+    config.orient = document.getElementById('setOrient').value;
+    toolbar.className = config.orient === 'vert' ? 'vertical' : '';
+    const container = document.getElementById('canvas-container');
+    container.style.backgroundColor = `var(--paper-${config.paper})`;
+    container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
+    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)');
+  }
+
   document.querySelectorAll('.swatch').forEach(s => {
-    s.onclick = () => {
-      document.querySelector('.swatch.selected').classList.remove('selected');
-      s.classList.add('selected');
-      config.ink = s.dataset.color;
-    };
+    s.onclick = () => { document.querySelector('.swatch.selected').classList.remove('selected'); s.classList.add('selected'); config.ink = s.dataset.color; };
   });
 
   document.getElementById('penBtn').onclick = () => { tool = 'pen'; updateBtns(); };
   document.getElementById('eraserBtn').onclick = () => { tool = 'eraser'; updateBtns(); };
-  function updateBtns() {
-    document.getElementById('penBtn').classList.toggle('active', tool === 'pen');
-    document.getElementById('eraserBtn').classList.toggle('active', tool === 'eraser');
-  }
+  function updateBtns() { document.getElementById('penBtn').classList.toggle('active', tool === 'pen'); document.getElementById('eraserBtn').classList.toggle('active', tool === 'eraser'); }
 
   document.getElementById('undoBtn').onclick = () => { if(pages[currentPage].length) { redoStack.push(pages[currentPage].pop()); redraw(); save(); } };
   document.getElementById('redoBtn').onclick = () => { if(redoStack.length) { pages[currentPage].push(redoStack.pop()); redraw(); save(); } };
   document.getElementById('clearBtn').onclick = () => { if(confirm("Clear page?")) { pages[currentPage] = []; redraw(); save(); } };
   document.getElementById('resetView').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; redraw(); };
 
-  document.getElementById('nextPage').onclick = () => { 
-    currentPage++; 
-    if(!pages[currentPage]) pages[currentPage] = []; 
-    document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1);
-    redraw(); 
-  };
-  document.getElementById('prevPage').onclick = () => { 
-    if(currentPage > 0) { currentPage--; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); }
-  };
+  document.getElementById('nextPage').onclick = () => { currentPage++; if(!pages[currentPage]) pages[currentPage] = []; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); };
+  document.getElementById('prevPage').onclick = () => { if(currentPage > 0) { currentPage--; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); } };
 
-  // Toolbar Dragging Restored
   let dragOff = { x: 0, y: 0 };
-  toolbar.onpointerdown = (e) => {
-    if (e.target.closest('.handle')) {
-      isDraggingMenu = true;
-      dragOff.x = e.clientX - toolbar.offsetLeft; dragOff.y = e.clientY - toolbar.offsetTop;
-      toolbar.setPointerCapture(e.pointerId);
-    }
-  };
-  toolbar.onpointermove = (e) => {
-    if (isDraggingMenu) {
-      toolbar.style.left = (e.clientX - dragOff.x) + 'px';
-      toolbar.style.top = (e.clientY - dragOff.y) + 'px';
-    }
-  };
+  toolbar.onpointerdown = (e) => { if (e.target.closest('.handle')) { isDraggingMenu = true; dragOff.x = e.clientX - toolbar.offsetLeft; dragOff.y = e.clientY - toolbar.offsetTop; toolbar.setPointerCapture(e.pointerId); } };
+  toolbar.onpointermove = (e) => { if (isDraggingMenu) { toolbar.style.left = (e.clientX - dragOff.x) + 'px'; toolbar.style.top = (e.clientY - dragOff.y) + 'px'; } };
   toolbar.onpointerup = () => isDraggingMenu = false;
 
   window.onclick = (e) => { if(!e.target.closest('.tool-btn') && !e.target.closest('.popover')) document.querySelectorAll('.popover').forEach(p => p.style.display = 'none'); };
@@ -269,9 +265,7 @@
   initCanvas();
   try { bridge = new ComponentRelay({ targetWindow: window }); } catch(e){}
 
-  function save() {
-    if (bridge) bridge.saveItemWithPayload({ content: { text: JSON.stringify({ pages, config }), preview_title: "Quill Notebook" } });
-  }
+  function save() { if (bridge) bridge.saveItemWithPayload({ content: { text: JSON.stringify({ pages, config }), preview_title: "Quill Notebook" } }); }
 </script>
 </body>
 </html>
