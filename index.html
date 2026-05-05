@@ -20,67 +20,62 @@
     }
 
     #toolbar {
-      position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-      background: #222; padding: 8px 15px; border-radius: 25px; 
-      display: flex; gap: 10px; z-index: 100; border: 1px solid #444;
-      align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      position: fixed; top: 20px; left: 20px;
+      background: rgba(34, 34, 34, 0.9); backdrop-filter: blur(8px);
+      padding: 10px; border-radius: 12px; 
+      display: flex; gap: 8px; z-index: 100; border: 1px solid #444;
+      align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      cursor: grab; transition: flex-direction 0.2s ease;
     }
 
+    #toolbar.vertical { flex-direction: column; width: auto; }
+    #toolbar:active { cursor: grabbing; }
+
+    .handle { 
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      color: #777; font-size: 18px; margin-right: 4px; user-select: none;
+    }
+    .vertical .handle { margin-right: 0; margin-bottom: 4px; }
+
     #canvas-container {
-      height: 100vh; width: 100vw; 
-      display: block;
-      position: relative;
+      height: 100vh; width: 100vw; position: relative;
     }
 
     canvas {
-      position: absolute;
-      top: 0; left: 0;
-      touch-action: none;
-      display: block;
-      cursor: crosshair;
-      z-index: 5;
+      position: absolute; top: 0; left: 0;
+      touch-action: none; display: block; cursor: crosshair; z-index: 5;
     }
 
     /* Template Patterns */
-    .tpl-lines {
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important;
-      background-size: 100% 32px !important;
-    }
-    .tpl-grid {
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), 
-                        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important;
-      background-size: 32px 32px !important;
-    }
-    .tpl-dots {
-      background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important;
-      background-size: 32px 32px !important;
-    }
+    .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
+    .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
+    .tpl-dots { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important; background-size: 32px 32px !important; }
 
     select, button { 
       background: #333; color: #eee; border: 1px solid #555; 
-      padding: 5px 8px; border-radius: 6px; font-size: 12px;
+      padding: 6px; border-radius: 6px; font-size: 12px; outline: none; width: 100%;
     }
-
-    .brand { color: #fff; font-weight: bold; margin-right: 5px; font-size: 12px; opacity: 0.8; }
+    
+    .btn-icon { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div id="toolbar">
-  <span class="brand">QUILL</span>
+  <div class="handle">⠿</div>
   
   <select id="penColor">
-    <option value="#18181b">Ink Black</option>
-    <option value="#1e3a8a">Ink Blue</option>
-    <option value="#b91c1c">Ink Red</option>
-    <option value="#e2e8f0">Ink Silver</option>
-    <option value="#ffffff">Ink White</option>
+    <option value="#18181b">Black</option>
+    <option value="#1e3a8a">Blue</option>
+    <option value="#b91c1c">Red</option>
+    <option value="#e2e8f0">Silver</option>
+    <option value="#ffffff">White</option>
   </select>
 
   <select id="paperColor" onchange="updateUI()">
     <option value="white">White</option>
     <option value="yellow">Post-it</option>
-    <option value="blue">Const. Blue</option>
+    <option value="blue">Blue</option>
   </select>
 
   <select id="template" onchange="updateUI()">
@@ -95,7 +90,8 @@
     <option value="eraser">Eraser</option>
   </select>
 
-  <button id="clearBtn">Clear</button>
+  <button id="toggleOrient" class="btn-icon" title="Toggle Orientation">⇄</button>
+  <button id="clearBtn" class="btn-icon" style="color: #ff5555;">✖</button>
 </div>
 
 <div id="canvas-container">
@@ -105,10 +101,36 @@
 <script>
   const canvas = document.getElementById('hwCanvas');
   const container = document.getElementById('canvas-container');
+  const toolbar = document.getElementById('toolbar');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
   let bridge = null;
-  let currentNoteData = { paper: 'white', template: 'blank' };
+  let currentNoteData = { paper: 'white', template: 'blank', orient: 'horiz' };
+
+  // Floating & Dragging Logic
+  let isDraggingMenu = false;
+  let offset = { x: 0, y: 0 };
+
+  toolbar.addEventListener('pointerdown', (e) => {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
+    isDraggingMenu = true;
+    offset.x = e.clientX - toolbar.offsetLeft;
+    offset.y = e.clientY - toolbar.offsetTop;
+    toolbar.setPointerCapture(e.pointerId);
+  });
+
+  toolbar.addEventListener('pointermove', (e) => {
+    if (!isDraggingMenu) return;
+    toolbar.style.left = (e.clientX - offset.x) + 'px';
+    toolbar.style.top = (e.clientY - offset.y) + 'px';
+  });
+
+  toolbar.addEventListener('pointerup', () => isDraggingMenu = false);
+
+  document.getElementById('toggleOrient').onclick = () => {
+    toolbar.classList.toggle('vertical');
+    currentNoteData.orient = toolbar.classList.contains('vertical') ? 'vert' : 'horiz';
+  };
 
   try {
     if (typeof ComponentRelay !== 'undefined') {
@@ -122,15 +144,10 @@
   function updateUI() {
     const paper = document.getElementById('paperColor').value;
     const tpl = document.getElementById('template').value;
-    
     container.style.backgroundColor = `var(--paper-${paper})`;
-    
-    // Light grid for blue paper, dark for others
     const gridOpacity = paper === 'blue' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)';
     document.documentElement.style.setProperty('--grid-color', gridOpacity);
-    
     container.className = tpl === 'blank' ? '' : `tpl-${tpl}`;
-    
     currentNoteData.paper = paper;
     currentNoteData.template = tpl;
   }
@@ -139,12 +156,10 @@
     const dpr = window.devicePixelRatio || 1;
     const w = window.innerWidth;
     const h = window.innerHeight;
-    
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
-    
     ctx.scale(dpr, dpr);
     render();
   }
@@ -157,12 +172,12 @@
   }
 
   function start(e) {
+    if (isDraggingMenu) return;
     isDrawing = true;
     const pos = getPos(e);
     ctx.beginPath();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    
     if (document.getElementById('tool').value === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = 40;
@@ -201,8 +216,10 @@
   canvas.addEventListener('touchstart', (e) => { if(e.cancelable) e.preventDefault(); }, {passive: false});
 
   document.getElementById('clearBtn').onclick = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    save();
+    if(confirm("Clear everything?")) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      save();
+    }
   };
 
   function save() {
@@ -227,8 +244,8 @@
             const data = JSON.parse(item.content.text);
             if (data.paper) document.getElementById('paperColor').value = data.paper;
             if (data.template) document.getElementById('template').value = data.template;
+            if (data.orient === 'vert') toolbar.classList.add('vertical');
             updateUI();
-            
             if (data.imageData) {
               const img = new Image();
               img.onload = () => {
@@ -240,9 +257,7 @@
           } catch(e) {}
         }
       });
-    } else {
-      updateUI();
-    }
+    } else { updateUI(); }
   }
 
   window.addEventListener('resize', resize);
