@@ -27,30 +27,33 @@
     }
 
     #canvas-container {
-      height: 100vh; width: 100vw; display: flex; 
-      justify-content: center; align-items: flex-start;
+      height: 100vh; width: 100vw; 
+      display: block;
+      position: relative;
     }
 
     canvas {
+      position: absolute;
+      top: 0; left: 0;
       touch-action: none;
       display: block;
       cursor: crosshair;
-      transition: background-color 0.2s ease;
+      z-index: 5;
     }
 
     /* Template Patterns */
     .tpl-lines {
-      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px);
-      background-size: 100% 30px;
+      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important;
+      background-size: 100% 32px !important;
     }
     .tpl-grid {
       background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), 
-                        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size: 30px 30px;
+                        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important;
+      background-size: 32px 32px !important;
     }
     .tpl-dots {
-      background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px);
-      background-size: 30px 30px;
+      background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important;
+      background-size: 32px 32px !important;
     }
 
     select, button { 
@@ -70,6 +73,7 @@
     <option value="#18181b">Ink Black</option>
     <option value="#1e3a8a">Ink Blue</option>
     <option value="#b91c1c">Ink Red</option>
+    <option value="#e2e8f0">Ink Silver</option>
     <option value="#ffffff">Ink White</option>
   </select>
 
@@ -100,6 +104,7 @@
 
 <script>
   const canvas = document.getElementById('hwCanvas');
+  const container = document.getElementById('canvas-container');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
   let bridge = null;
@@ -118,13 +123,13 @@
     const paper = document.getElementById('paperColor').value;
     const tpl = document.getElementById('template').value;
     
-    // Set colors
-    canvas.style.backgroundColor = `var(--paper-${paper})`;
+    container.style.backgroundColor = `var(--paper-${paper})`;
+    
+    // Light grid for blue paper, dark for others
     const gridOpacity = paper === 'blue' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)';
     document.documentElement.style.setProperty('--grid-color', gridOpacity);
     
-    // Set template class
-    canvas.className = tpl === 'blank' ? '' : `tpl-${tpl}`;
+    container.className = tpl === 'blank' ? '' : `tpl-${tpl}`;
     
     currentNoteData.paper = paper;
     currentNoteData.template = tpl;
@@ -134,14 +139,13 @@
     const dpr = window.devicePixelRatio || 1;
     const w = window.innerWidth;
     const h = window.innerHeight;
+    
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
-    ctx.scale(dpr, dpr);
     
-    // We don't fillRect with color here anymore because CSS handles the background
-    // This keeps the exported PNG transparent where there is no ink
+    ctx.scale(dpr, dpr);
     render();
   }
 
