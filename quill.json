@@ -5,5 +5,9 @@
   "area": "editor-editor",
   "version": "1.0.0",
   "description": "Precision handwriting plugin.",
-  "url": "https://woofson.github.io/sn-quill/index.html"
+  "url": "https://woofson.github.io/sn-quill/index.html",
+  "download_url": "https://github.com/Woofson/sn-quill",
+  "latest_url": "https://woofson.github.io/sn-quill/quill.json",
+  "marketing_url": "https://github.com/Woofson/sn-quill",
+  "thumbnail_url": "https://github.com/Woofson/sn-quill/icon.png"
 }
