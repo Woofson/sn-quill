@@ -53,13 +53,12 @@
     }
     .modal-content { background: #1e1e1e; width: 90%; max-width: 360px; padding: 30px; border-radius: 28px; border: 1px solid #333; color: #eee; }
 
-    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; background: #111; transition: background-color 0.3s; }
     canvas { position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; }
     
     #cursor-guide {
       position: fixed; pointer-events: none; border: 1px solid rgba(128, 128, 128, 0.4);
       border-radius: 50%; z-index: 9999; transform: translate(-50%, -50%); display: none;
-      background: rgba(255, 255, 255, 0.05);
     }
 
     input[type="range"] { width: 100%; accent-color: var(--accent); }
@@ -67,7 +66,6 @@
     select { background: #2a2a2a; color: #eee; border: 1px solid #444; padding: 10px; border-radius: 10px; width: 60%; }
     .danger-btn { background: rgba(255, 85, 85, 0.1); color: #ff5555; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 11px; text-align: center; border: 1px solid rgba(255, 85, 85, 0.2); }
 
-    /* Templates */
     .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
     .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
     .tpl-dots { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important; background-size: 32px 32px !important; }
@@ -78,9 +76,7 @@
 <div id="cursor-guide"></div>
 
 <div id="toolbar">
-  <div class="handle">
-    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#555;"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-  </div>
+  <div class="handle"><svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#555;"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
   <div id="penBtn" class="tool-btn active"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></div>
   <div id="eraserBtn" class="tool-btn"><svg viewBox="0 0 24 24"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 0 1-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0z"/></svg></div>
   <div style="width:1px; height:20px; background:rgba(255,255,255,0.1);"></div>
@@ -91,7 +87,7 @@
 
 <div id="penPopover" class="popover">
   <label>Ink Color</label>
-  <div class="color-grid">
+  <div class="color-grid" id="colorGrid">
     <div class="swatch selected" data-color="#18181b" style="background:#18181b"></div>
     <div class="swatch" data-color="#1e3a8a" style="background:#1e3a8a"></div>
     <div class="swatch" data-color="#b91c1c" style="background:#b91c1c"></div>
@@ -100,10 +96,7 @@
   </div>
   <label style="margin-top:10px">Width <span id="lwVal" class="val-display">4</span></label>
   <input type="range" id="lineWidth" min="1" max="40" value="4">
-  <div class="row" style="margin-top:10px; margin-bottom:0;">
-    <label>Pressure Sensitivity</label>
-    <input type="checkbox" id="usePressure" checked>
-  </div>
+  <div class="row" style="margin-top:10px; margin-bottom:0;"><label>Pressure</label><input type="checkbox" id="usePressure" checked></div>
 </div>
 
 <div id="eraserPopover" class="popover">
@@ -151,24 +144,18 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-
     (pages[currentPage] || []).forEach(stroke => {
       if (stroke.points.length < 2) return;
-      ctx.beginPath();
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.strokeStyle = stroke.color;
       ctx.globalCompositeOperation = stroke.type === 'eraser' ? 'destination-out' : 'source-over';
-      
       stroke.points.forEach((p, i) => {
         ctx.lineWidth = p.p ? stroke.width * p.p : stroke.width;
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       });
       ctx.stroke();
     });
   }
-
-  function screenToCanvas(x, y) { return { x: (x - offsetX) / scale, y: (y - offsetY) / scale }; }
 
   function setupLongPress(btn, popover) {
     btn.onpointerdown = (e) => {
@@ -180,7 +167,6 @@
       }, 500);
     };
     btn.onpointerup = () => clearTimeout(pressTimer);
-    btn.onpointerleave = () => clearTimeout(pressTimer);
   }
 
   setupLongPress(document.getElementById('penBtn'), document.getElementById('penPopover'));
@@ -189,7 +175,7 @@
   canvas.onpointerdown = (e) => {
     if (e.target !== canvas || isDraggingMenu) return;
     isDrawing = true;
-    const pos = screenToCanvas(e.clientX, e.clientY);
+    const pos = { x: (e.clientX - offsetX) / scale, y: (e.clientY - offsetY) / scale };
     const p = config.pressure && e.pressure > 0 ? e.pressure : null;
     pages[currentPage].push({ type: tool, color: config.ink, width: tool === 'eraser' ? config.eraser : config.width, points: [{...pos, p}] });
     redoStack = [];
@@ -197,46 +183,56 @@
 
   window.onpointermove = (e) => {
     if (isDrawing) {
-      const pos = screenToCanvas(e.clientX, e.clientY);
+      const pos = { x: (e.clientX - offsetX) / scale, y: (e.clientY - offsetY) / scale };
       const p = config.pressure && e.pressure > 0 ? e.pressure : null;
       pages[currentPage][pages[currentPage].length - 1].points.push({...pos, p});
       redraw();
     }
-    guide.style.display = 'block';
-    guide.style.left = e.clientX + 'px'; guide.style.top = e.clientY + 'px';
+    guide.style.display = 'block'; guide.style.left = e.clientX + 'px'; guide.style.top = e.clientY + 'px';
     const s = (tool === 'eraser' ? config.eraser : config.width) * scale;
     guide.style.width = s + 'px'; guide.style.height = s + 'px';
     if (e.target.closest('#toolbar') || e.target.closest('.popover')) guide.style.display = 'none';
   };
 
   window.onpointerup = () => { if(isDrawing) { isDrawing = false; save(); } };
-
   window.onwheel = (e) => {
     e.preventDefault();
     const zoom = e.deltaY > 0 ? 0.9 : 1.1;
-    const before = screenToCanvas(e.clientX, e.clientY);
+    const bx = (e.clientX - offsetX) / scale, by = (e.clientY - offsetY) / scale;
     scale *= zoom;
-    const after = screenToCanvas(e.clientX, e.clientY);
-    offsetX += (after.x - before.x) * scale; offsetY += (after.y - before.y) * scale;
+    offsetX = e.clientX - bx * scale; offsetY = e.clientY - by * scale;
     redraw();
   };
 
-  // UI Handlers
   document.getElementById('lineWidth').oninput = (e) => { config.width = e.target.value; document.getElementById('lwVal').innerText = e.target.value; };
   document.getElementById('eraserSize').oninput = (e) => { config.eraser = e.target.value; document.getElementById('esVal').innerText = e.target.value; };
   document.getElementById('usePressure').onchange = (e) => { config.pressure = e.target.checked; };
   document.getElementById('settingsBtn').onclick = () => { document.getElementById('settingsModal').style.display = 'flex'; };
-  document.getElementById('closeSettings').onclick = () => { document.getElementById('settingsModal').style.display = 'none'; updateUI(); save(); };
-
-  function updateUI() {
+  document.getElementById('closeSettings').onclick = () => {
     config.paper = document.getElementById('paperColor').value;
     config.template = document.getElementById('template').value;
     config.orient = document.getElementById('setOrient').value;
+    applyConfig();
+    document.getElementById('settingsModal').style.display = 'none';
+    save();
+  };
+
+  function applyConfig() {
     toolbar.className = config.orient === 'vert' ? 'vertical' : '';
     const container = document.getElementById('canvas-container');
     container.style.backgroundColor = `var(--paper-${config.paper})`;
     container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
     document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)');
+    document.getElementById('setOrient').value = config.orient;
+    document.getElementById('paperColor').value = config.paper;
+    document.getElementById('template').value = config.template;
+    document.getElementById('lineWidth').value = config.width;
+    document.getElementById('lwVal').innerText = config.width;
+    document.getElementById('usePressure').checked = config.pressure;
+    document.querySelectorAll('.swatch').forEach(s => {
+       s.classList.toggle('selected', s.dataset.color === config.ink);
+    });
+    redraw();
   }
 
   document.querySelectorAll('.swatch').forEach(s => {
@@ -249,11 +245,11 @@
 
   document.getElementById('undoBtn').onclick = () => { if(pages[currentPage].length) { redoStack.push(pages[currentPage].pop()); redraw(); save(); } };
   document.getElementById('redoBtn').onclick = () => { if(redoStack.length) { pages[currentPage].push(redoStack.pop()); redraw(); save(); } };
-  document.getElementById('clearBtn').onclick = () => { if(confirm("Clear page?")) { pages[currentPage] = []; redraw(); save(); } };
+  document.getElementById('clearBtn').onclick = () => { if(confirm("Clear?")) { pages[currentPage] = []; redraw(); save(); } };
   document.getElementById('resetView').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; redraw(); };
 
-  document.getElementById('nextPage').onclick = () => { currentPage++; if(!pages[currentPage]) pages[currentPage] = []; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); };
-  document.getElementById('prevPage').onclick = () => { if(currentPage > 0) { currentPage--; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); } };
+  document.getElementById('nextPage').onclick = () => { currentPage++; if(!pages[currentPage]) pages[currentPage] = []; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); save(); };
+  document.getElementById('prevPage').onclick = () => { if(currentPage > 0) { currentPage--; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); save(); } };
 
   let dragOff = { x: 0, y: 0 };
   toolbar.onpointerdown = (e) => { if (e.target.closest('.handle')) { isDraggingMenu = true; dragOff.x = e.clientX - toolbar.offsetLeft; dragOff.y = e.clientY - toolbar.offsetTop; toolbar.setPointerCapture(e.pointerId); } };
@@ -263,9 +259,22 @@
   window.onclick = (e) => { if(!e.target.closest('.tool-btn') && !e.target.closest('.popover')) document.querySelectorAll('.popover').forEach(p => p.style.display = 'none'); };
   window.onresize = initCanvas;
   initCanvas();
-  try { bridge = new ComponentRelay({ targetWindow: window }); } catch(e){}
 
-  function save() { if (bridge) bridge.saveItemWithPayload({ content: { text: JSON.stringify({ pages, config }), preview_title: "Quill Notebook" } }); }
+  bridge = new ComponentRelay({
+    targetWindow: window,
+    onDataUpdate: (data) => {
+      try {
+        const saved = JSON.parse(data.item.content.text);
+        if(saved.pages) pages = saved.pages;
+        if(saved.config) config = {...config, ...saved.config};
+        if(saved.currentPage !== undefined) currentPage = saved.currentPage;
+        document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1);
+        applyConfig();
+      } catch(e) {}
+    }
+  });
+
+  function save() { if (bridge) bridge.saveItemWithPayload({ content: { text: JSON.stringify({ pages, config, currentPage }), preview_title: "Quill Notebook" } }); }
 </script>
 </body>
 </html>
