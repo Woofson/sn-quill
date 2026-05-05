@@ -9,7 +9,7 @@
       --paper-white: #fdfcf0; --paper-yellow: #fef9c3; --paper-blue: #2b4570;
       --grid-color: rgba(0, 0, 0, 0.08); --accent: #3b82f6; --bg-panel: rgba(25, 25, 25, 0.95);
     }
-    body, html { margin: 0; padding: 0; height: 100%; background: #111; overflow: hidden; font-family: sans-serif; touch-action: none; }
+    body, html { margin: 0; padding: 0; height: 100%; background: var(--paper-white); overflow: hidden; font-family: sans-serif; touch-action: none; }
     
     #toolbar {
       position: fixed; top: 20px; left: 20px; background: var(--bg-panel); 
@@ -18,7 +18,7 @@
       border: 1px solid rgba(255,255,255,0.1); align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     }
     #toolbar.vertical { flex-direction: column; }
-    .handle { cursor: grab; color: #555; padding: 6px; user-select: none; display: flex; align-items: center; }
+    .handle { cursor: grab; color: #555; padding: 6px; display: flex; align-items: center; }
 
     #page-nav {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -30,7 +30,7 @@
     .tool-btn {
       width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
       background: rgba(255,255,255,0.05); color: #ccc; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s; position: relative;
+      cursor: pointer; transition: all 0.2s;
     }
     .tool-btn svg { width: 20px; height: 20px; fill: currentColor; pointer-events: none; }
     .tool-btn.active { background: var(--accent); color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
@@ -43,9 +43,9 @@
     .popover label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
     .val-display { float: right; color: var(--accent); font-family: monospace; }
 
-    .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
     .swatch.selected { border-color: var(--accent); transform: scale(1.1); }
+    .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 
     #settingsModal {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
@@ -53,7 +53,7 @@
     }
     .modal-content { background: #1e1e1e; width: 90%; max-width: 360px; padding: 30px; border-radius: 28px; border: 1px solid #333; color: #eee; }
 
-    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; background: #111; transition: background-color 0.3s; }
+    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; background: var(--paper-white); }
     canvas { position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; }
     
     #cursor-guide {
@@ -64,7 +64,6 @@
     input[type="range"] { width: 100%; accent-color: var(--accent); }
     .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     select { background: #2a2a2a; color: #eee; border: 1px solid #444; padding: 10px; border-radius: 10px; width: 60%; }
-    .danger-btn { background: rgba(255, 85, 85, 0.1); color: #ff5555; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 11px; text-align: center; border: 1px solid rgba(255, 85, 85, 0.2); }
 
     .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
     .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
@@ -86,8 +85,8 @@
 </div>
 
 <div id="penPopover" class="popover">
-  <label>Ink Color</label>
-  <div class="color-grid" id="colorGrid">
+  <label>Color</label>
+  <div class="color-grid">
     <div class="swatch selected" data-color="#18181b" style="background:#18181b"></div>
     <div class="swatch" data-color="#1e3a8a" style="background:#1e3a8a"></div>
     <div class="swatch" data-color="#b91c1c" style="background:#b91c1c"></div>
@@ -100,18 +99,18 @@
 </div>
 
 <div id="eraserPopover" class="popover">
-  <label>Eraser Size <span id="esVal" class="val-display">40</span></label>
+  <label>Eraser <span id="esVal" class="val-display">40</span></label>
   <input type="range" id="eraserSize" min="5" max="150" value="40">
-  <div id="clearBtn" class="danger-btn" style="margin-top:10px">Clear Page</div>
+  <button id="clearBtn" style="width:100%; margin-top:10px; padding:8px; background:rgba(255,0,0,0.1); color:red; border:1px solid red; border-radius:8px; cursor:pointer;">Clear Page</button>
 </div>
 
 <div id="settingsModal">
   <div class="modal-content">
-    <h3 style="margin-top:0">Notebook Settings</h3>
+    <h3>Settings</h3>
     <div class="row"><label>Orientation</label><select id="setOrient"><option value="horiz">Horizontal</option><option value="vert">Vertical</option></select></div>
-    <div class="row"><label>Paper Color</label><select id="paperColor"><option value="white">White</option><option value="yellow">Post-it</option><option value="blue">Blue</option></select></div>
+    <div class="row"><label>Paper</label><select id="paperColor"><option value="white">White</option><option value="yellow">Yellow</option><option value="blue">Blue</option></select></div>
     <div class="row"><label>Template</label><select id="template"><option value="blank">Blank</option><option value="lines">Lines</option><option value="grid">Grid</option><option value="dots">Dots</option></select></div>
-    <button id="closeSettings" style="width:100%; padding:14px; background:var(--accent); border:none; color:white; border-radius:12px; font-weight:600; cursor:pointer;">Apply Changes</button>
+    <button id="closeSettings" style="width:100%; padding:12px; background:var(--accent); border:none; color:white; border-radius:10px; cursor:pointer;">Apply</button>
   </div>
 </div>
 
@@ -126,7 +125,7 @@
 
 <script>
   const canvas = document.getElementById('hwCanvas'), ctx = canvas.getContext('2d'), toolbar = document.getElementById('toolbar'), guide = document.getElementById('cursor-guide');
-  let bridge = null, tool = 'pen', isDrawing = false, isDraggingMenu = false, pressTimer;
+  let bridge = null, tool = 'pen', isDrawing = false, isDraggingMenu = false, pressTimer, lastSavedJson = "";
   
   let scale = 1, offsetX = 0, offsetY = 0;
   let pages = [[]], redoStack = [], currentPage = 0;
@@ -136,6 +135,24 @@
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px'; canvas.style.height = window.innerHeight + 'px';
+    redraw();
+  }
+
+  function applyConfig() {
+    toolbar.className = config.orient === 'vert' ? 'vertical' : '';
+    const container = document.getElementById('canvas-container');
+    container.style.backgroundColor = `var(--paper-${config.paper})`;
+    document.body.style.backgroundColor = `var(--paper-${config.paper})`;
+    container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
+    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)');
+    
+    document.getElementById('setOrient').value = config.orient;
+    document.getElementById('paperColor').value = config.paper;
+    document.getElementById('template').value = config.template;
+    document.getElementById('lineWidth').value = config.width;
+    document.getElementById('lwVal').innerText = config.width;
+    document.getElementById('usePressure').checked = config.pressure;
+    document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === config.ink));
     redraw();
   }
 
@@ -206,7 +223,7 @@
 
   document.getElementById('lineWidth').oninput = (e) => { config.width = e.target.value; document.getElementById('lwVal').innerText = e.target.value; };
   document.getElementById('eraserSize').oninput = (e) => { config.eraser = e.target.value; document.getElementById('esVal').innerText = e.target.value; };
-  document.getElementById('usePressure').onchange = (e) => { config.pressure = e.target.checked; };
+  document.getElementById('usePressure').onchange = (e) => { config.pressure = e.target.checked; save(); };
   document.getElementById('settingsBtn').onclick = () => { document.getElementById('settingsModal').style.display = 'flex'; };
   document.getElementById('closeSettings').onclick = () => {
     config.paper = document.getElementById('paperColor').value;
@@ -217,26 +234,8 @@
     save();
   };
 
-  function applyConfig() {
-    toolbar.className = config.orient === 'vert' ? 'vertical' : '';
-    const container = document.getElementById('canvas-container');
-    container.style.backgroundColor = `var(--paper-${config.paper})`;
-    container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
-    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)');
-    document.getElementById('setOrient').value = config.orient;
-    document.getElementById('paperColor').value = config.paper;
-    document.getElementById('template').value = config.template;
-    document.getElementById('lineWidth').value = config.width;
-    document.getElementById('lwVal').innerText = config.width;
-    document.getElementById('usePressure').checked = config.pressure;
-    document.querySelectorAll('.swatch').forEach(s => {
-       s.classList.toggle('selected', s.dataset.color === config.ink);
-    });
-    redraw();
-  }
-
   document.querySelectorAll('.swatch').forEach(s => {
-    s.onclick = () => { document.querySelector('.swatch.selected').classList.remove('selected'); s.classList.add('selected'); config.ink = s.dataset.color; };
+    s.onclick = () => { document.querySelector('.swatch.selected').classList.remove('selected'); s.classList.add('selected'); config.ink = s.dataset.color; save(); };
   });
 
   document.getElementById('penBtn').onclick = () => { tool = 'pen'; updateBtns(); };
@@ -251,9 +250,8 @@
   document.getElementById('nextPage').onclick = () => { currentPage++; if(!pages[currentPage]) pages[currentPage] = []; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); save(); };
   document.getElementById('prevPage').onclick = () => { if(currentPage > 0) { currentPage--; document.getElementById('pageDisplay').innerText = "Page " + (currentPage+1); redraw(); save(); } };
 
-  let dragOff = { x: 0, y: 0 };
-  toolbar.onpointerdown = (e) => { if (e.target.closest('.handle')) { isDraggingMenu = true; dragOff.x = e.clientX - toolbar.offsetLeft; dragOff.y = e.clientY - toolbar.offsetTop; toolbar.setPointerCapture(e.pointerId); } };
-  toolbar.onpointermove = (e) => { if (isDraggingMenu) { toolbar.style.left = (e.clientX - dragOff.x) + 'px'; toolbar.style.top = (e.clientY - dragOff.y) + 'px'; } };
+  toolbar.onpointerdown = (e) => { if (e.target.closest('.handle')) { isDraggingMenu = true; toolbar.setPointerCapture(e.pointerId); } };
+  toolbar.onpointermove = (e) => { if (isDraggingMenu) { toolbar.style.left = (e.clientX - 20) + 'px'; toolbar.style.top = (e.clientY - 20) + 'px'; } };
   toolbar.onpointerup = () => isDraggingMenu = false;
 
   window.onclick = (e) => { if(!e.target.closest('.tool-btn') && !e.target.closest('.popover')) document.querySelectorAll('.popover').forEach(p => p.style.display = 'none'); };
@@ -263,8 +261,10 @@
   bridge = new ComponentRelay({
     targetWindow: window,
     onDataUpdate: (data) => {
+      const text = data.item.content.text;
+      if (text === lastSavedJson) return; 
       try {
-        const saved = JSON.parse(data.item.content.text);
+        const saved = JSON.parse(text);
         if(saved.pages) pages = saved.pages;
         if(saved.config) config = {...config, ...saved.config};
         if(saved.currentPage !== undefined) currentPage = saved.currentPage;
@@ -274,7 +274,12 @@
     }
   });
 
-  function save() { if (bridge) bridge.saveItemWithPayload({ content: { text: JSON.stringify({ pages, config, currentPage }), preview_title: "Quill Notebook" } }); }
+  function save() {
+    if (!bridge) return;
+    const payload = JSON.stringify({ pages, config, currentPage });
+    lastSavedJson = payload;
+    bridge.saveItemWithPayload({ content: { text: payload, preview_title: "Quill Notebook" } });
+  }
 </script>
 </body>
 </html>
