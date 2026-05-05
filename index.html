@@ -7,209 +7,207 @@
   <style>
     :root {
       --paper-white: #fdfcf0; --paper-yellow: #fef9c3; --paper-blue: #2b4570;
-      --grid-color: rgba(0, 0, 0, 0.08); --accent: #3b82f6;
+      --grid-color: rgba(0, 0, 0, 0.08); --accent: #3b82f6; --bg-panel: rgba(25, 25, 25, 0.95);
     }
-    body, html { margin: 0; padding: 0; height: 100%; background: #1a1a1a; overflow: hidden; font-family: sans-serif; touch-action: none; }
+    body, html { margin: 0; padding: 0; height: 100%; background: #111; overflow: hidden; font-family: sans-serif; touch-action: none; }
     
-    /* Toolbar */
     #toolbar {
-      position: fixed; top: 20px; left: 20px; background: rgba(30, 30, 30, 0.95); 
-      backdrop-filter: blur(10px); padding: 8px; border-radius: 14px; 
-      display: flex; gap: 8px; z-index: 100; border: 1px solid #444; align-items: center;
+      position: fixed; top: 20px; left: 20px; background: var(--bg-panel); 
+      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+      padding: 8px; border-radius: 18px; display: flex; gap: 8px; z-index: 100; 
+      border: 1px solid rgba(255,255,255,0.1); align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     }
     #toolbar.vertical { flex-direction: column; }
-    .handle { cursor: grab; color: #666; padding: 4px; user-select: none; }
+    .handle { cursor: grab; color: #555; padding: 6px; user-select: none; }
 
-    /* Buttons & Tools */
     .tool-btn {
-      width: 40px; height: 40px; border-radius: 10px; border: 1px solid #444;
-      background: #333; color: #eee; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; position: relative; font-size: 18px;
+      width: 46px; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.05); color: #ccc; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .tool-btn.active { background: var(--accent); border-color: var(--accent); }
+    .tool-btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .tool-btn.active { background: var(--accent); color: white; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); border-color: transparent; }
     
     /* Popovers */
     .popover {
-      position: absolute; background: #222; border: 1px solid #444; border-radius: 10px;
-      padding: 12px; display: none; flex-direction: column; gap: 10px; z-index: 110;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: white; width: 150px;
+      position: absolute; background: #1e1e1e; border: 1px solid #333; border-radius: 16px;
+      padding: 18px; display: none; flex-direction: column; gap: 14px; z-index: 110;
+      box-shadow: 0 15px 45px rgba(0,0,0,0.7); color: white; width: 200px;
     }
-    .popover label { font-size: 11px; color: #999; text-transform: uppercase; }
+    .popover label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; display: block; margin-bottom: 5px; }
+    .val-display { float: right; color: var(--accent); }
+
+    /* Color Swatches */
+    .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 5px; }
+    .swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+    .swatch.selected { border-color: var(--accent); transform: scale(1.1); }
 
     /* Settings Modal */
     #settingsModal {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
-      display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+      display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px);
     }
-    .modal-content {
-      background: #222; width: 85%; max-width: 400px; padding: 25px; 
-      border-radius: 20px; border: 1px solid #444; color: #eee;
+    .modal-content { background: #1e1e1e; width: 90%; max-width: 360px; padding: 30px; border-radius: 28px; border: 1px solid #333; color: #eee; }
+    
+    /* Cursor Overlay */
+    #cursor-guide {
+      position: fixed; pointer-events: none; border: 1.5px solid rgba(128, 128, 128, 0.5);
+      border-radius: 50%; z-index: 9999; transform: translate(-50%, -50%); display: none;
+      background: rgba(255, 255, 255, 0.05);
     }
 
-    #canvas-container { height: 100vh; width: 100vw; position: relative; }
-    canvas { position: absolute; top: 0; left: 0; touch-action: none; z-index: 5; }
-
-    /* Templates */
+    #canvas-container { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+    canvas { position: absolute; top: 0; left: 0; touch-direction: none; z-index: 5; cursor: none; }
     .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
     .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
     .tpl-dots { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important; background-size: 32px 32px !important; }
-
     input[type="range"] { width: 100%; accent-color: var(--accent); }
-    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    select { background: #333; color: #eee; border: 1px solid #555; padding: 5px; border-radius: 5px; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    select { background: #2a2a2a; color: #eee; border: 1px solid #444; padding: 10px; border-radius: 10px; width: 60%; }
   </style>
 </head>
 <body>
 
+<div id="cursor-guide"></div>
+
 <div id="toolbar">
   <div class="handle">⠿</div>
   
-  <div id="penBtn" class="tool-btn active" title="Pen (Hold for settings)">✎</div>
-  <div id="eraserBtn" class="tool-btn" title="Eraser (Hold for size)">⌫</div>
+  <div id="penBtn" class="tool-btn active">
+    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.82-1.83z"/></svg>
+  </div>
+  
+  <div id="eraserBtn" class="tool-btn">
+    <svg viewBox="0 0 24 24"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 0 1-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.39.39 1.02.39 1.41 0l2.12-2.12-4.95-4.95-2.12 2.12c-.39.39-.39 1.02 0 1.42z"/></svg>
+  </div>
 
-  <select id="penColor">
-    <option value="#18181b">Black</option>
-    <option value="#1e3a8a">Blue</option>
-    <option value="#b91c1c">Red</option>
-    <option value="#e2e8f0">Silver</option>
-  </select>
-
-  <div id="settingsBtn" class="tool-btn">⚙</div>
-  <div id="clearBtn" class="tool-btn" style="color: #ff5555;">✖</div>
+  <div id="settingsBtn" class="tool-btn">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+  </div>
+  
+  <div id="clearBtn" class="tool-btn" style="color: #ff5555;">
+    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </div>
 </div>
 
-<!-- Long Press Popovers -->
+<!-- Pen Popover -->
 <div id="penPopover" class="popover">
-  <label>Line Width</label>
-  <input type="range" id="lineWidth" min="1" max="20" value="4">
-  <label>Pressure Sensitivity</label>
-  <div class="row">
-    <span>Active</span>
+  <label>Ink Color</label>
+  <div class="color-grid">
+    <div class="swatch selected" data-color="#18181b" style="background:#18181b"></div>
+    <div class="swatch" data-color="#1e3a8a" style="background:#1e3a8a"></div>
+    <div class="swatch" data-color="#b91c1c" style="background:#b91c1c"></div>
+    <div class="swatch" data-color="#e2e8f0" style="background:#e2e8f0"></div>
+    <div class="swatch" data-color="#ffffff" style="background:#ffffff"></div>
+  </div>
+  <label style="margin-top:10px">Width <span id="lineWidthVal" class="val-display">4</span></label>
+  <input type="range" id="lineWidth" min="1" max="30" value="4">
+  <label>Pressure</label>
+  <div class="row" style="margin-bottom:0">
+    <span style="font-size:12px">S-Pen Pressure</span>
     <input type="checkbox" id="usePressure" checked>
   </div>
 </div>
 
+<!-- Eraser Popover -->
 <div id="eraserPopover" class="popover">
-  <label>Eraser Size</label>
-  <input type="range" id="eraserSize" min="10" max="100" value="40">
+  <label>Eraser Diameter <span id="eraserSizeVal" class="val-display">40</span></label>
+  <input type="range" id="eraserSize" min="10" max="200" value="40">
 </div>
 
 <!-- Settings Modal -->
 <div id="settingsModal">
   <div class="modal-content">
-    <h3>Quill Settings</h3>
-    <div class="row">
-      <label>Orientation</label>
-      <select id="setOrient">
-        <option value="horiz">Horizontal</option>
-        <option value="vert">Vertical</option>
-      </select>
-    </div>
-    <div class="row">
-      <label>Paper Color</label>
-      <select id="paperColor">
-        <option value="white">White</option>
-        <option value="yellow">Post-it</option>
-        <option value="blue">Blue</option>
-      </select>
-    </div>
-    <div class="row">
-      <label>Template</label>
-      <select id="template">
-        <option value="blank">Blank</option>
-        <option value="lines">Lines</option>
-        <option value="grid">Grid</option>
-        <option value="dots">Dots</option>
-      </select>
-    </div>
-    <button id="closeSettings" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; border-radius:8px;">Save & Close</button>
+    <h3>Quill Defaults</h3>
+    <div class="row"><label>Orientation</label><select id="setOrient"><option value="horiz">Horizontal</option><option value="vert">Vertical</option></select></div>
+    <div class="row"><label>Paper Color</label><select id="paperColor"><option value="white">White</option><option value="yellow">Post-it</option><option value="blue">Blue</option></select></div>
+    <div class="row"><label>Template</label><select id="template"><option value="blank">Blank</option><option value="lines">Lines</option><option value="grid">Grid</option><option value="dots">Dots</option></select></div>
+    <button id="closeSettings" style="width:100%; padding:14px; background:var(--accent); border:none; color:white; border-radius:12px; font-weight:600; cursor:pointer;">Apply</button>
   </div>
 </div>
 
-<div id="canvas-container">
-  <canvas id="hwCanvas"></canvas>
-</div>
+<div id="canvas-container"><canvas id="hwCanvas"></canvas></div>
 
 <script>
-  const canvas = document.getElementById('hwCanvas');
-  const ctx = canvas.getContext('2d');
-  const toolbar = document.getElementById('toolbar');
-  let isDrawing = false, bridge = null;
-  let tool = 'pen', isDraggingMenu = false, pressTimer;
-  let config = { paper: 'white', template: 'blank', orient: 'horiz', pressure: true, width: 4, eraser: 40 };
+  const canvas = document.getElementById('hwCanvas'), ctx = canvas.getContext('2d'), toolbar = document.getElementById('toolbar'), guide = document.getElementById('cursor-guide');
+  let isDrawing = false, bridge = null, tool = 'pen', isDraggingMenu = false, pressTimer;
+  let config = { paper: 'white', template: 'blank', orient: 'horiz', pressure: true, width: 4, eraser: 40, ink: '#18181b' };
 
-  // --- Logic for Long Press ---
+  // --- UI & Interaction ---
   function setupLongPress(btn, popover) {
-    const start = (e) => {
+    btn.addEventListener('pointerdown', (e) => {
       pressTimer = setTimeout(() => {
-        popover.style.display = 'flex';
         const rect = btn.getBoundingClientRect();
-        popover.style.left = rect.right + 10 + 'px';
-        popover.style.top = rect.top + 'px';
-      }, 600);
-    };
-    const clear = () => { clearTimeout(pressTimer); };
-    btn.addEventListener('pointerdown', start);
-    btn.addEventListener('pointerup', clear);
-    btn.addEventListener('pointerleave', clear);
+        popover.style.display = 'flex';
+        popover.style.left = (toolbar.classList.contains('vertical') ? rect.right + 15 : rect.left) + 'px';
+        popover.style.top = (toolbar.classList.contains('vertical') ? rect.top : rect.bottom + 15) + 'px';
+      }, 500);
+    });
+    const cancel = () => clearTimeout(pressTimer);
+    btn.addEventListener('pointerup', cancel); btn.addEventListener('pointerleave', cancel);
   }
 
   setupLongPress(document.getElementById('penBtn'), document.getElementById('penPopover'));
   setupLongPress(document.getElementById('eraserBtn'), document.getElementById('eraserPopover'));
 
-  // Close popovers on click elsewhere
-  window.addEventListener('click', (e) => {
-    if (!e.target.closest('.tool-btn') && !e.target.closest('.popover')) {
-      document.querySelectorAll('.popover').forEach(p => p.style.display = 'none');
-    }
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.onclick = () => {
+      document.querySelector('.swatch.selected').classList.remove('selected');
+      s.classList.add('selected');
+      config.ink = s.dataset.color;
+      save();
+    };
   });
 
-  // --- Toolbar & Modal ---
   document.getElementById('penBtn').onclick = () => { tool = 'pen'; updateActiveTool(); };
   document.getElementById('eraserBtn').onclick = () => { tool = 'eraser'; updateActiveTool(); };
   document.getElementById('settingsBtn').onclick = () => { document.getElementById('settingsModal').style.display = 'flex'; };
-  document.getElementById('closeSettings').onclick = () => { 
-    document.getElementById('settingsModal').style.display = 'none';
-    updateUI();
-    save();
-  };
+  document.getElementById('closeSettings').onclick = () => { document.getElementById('settingsModal').style.display = 'none'; updateUI(); save(); };
 
   function updateActiveTool() {
     document.getElementById('penBtn').classList.toggle('active', tool === 'pen');
     document.getElementById('eraserBtn').classList.toggle('active', tool === 'eraser');
   }
 
-  // --- Core Drawing ---
   function updateUI() {
     config.paper = document.getElementById('paperColor').value;
     config.template = document.getElementById('template').value;
     config.orient = document.getElementById('setOrient').value;
-    
     toolbar.className = config.orient === 'vert' ? 'vertical' : '';
     const container = document.getElementById('canvas-container');
     container.style.backgroundColor = `var(--paper-${config.paper})`;
     container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
-    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)');
   }
 
+  // --- Cursor Guide Logic ---
+  window.addEventListener('pointermove', (e) => {
+    guide.style.display = 'block';
+    guide.style.left = e.clientX + 'px';
+    guide.style.top = e.clientY + 'px';
+    const size = tool === 'eraser' ? document.getElementById('eraserSize').value : (document.getElementById('usePressure').checked && e.pressure > 0 ? document.getElementById('lineWidth').value * e.pressure : document.getElementById('lineWidth').value);
+    guide.style.width = size + 'px';
+    guide.style.height = size + 'px';
+    if (e.target.closest('#toolbar') || e.target.closest('.popover')) guide.style.display = 'none';
+  });
+
+  // --- Drawing Core ---
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     return { x: (e.clientX || e.touches[0].clientX) - rect.left, y: (e.clientY || e.touches[0].clientY) - rect.top };
   }
 
   function startDraw(e) {
-    if (e.target !== canvas) return;
+    if (e.target !== canvas || isDraggingMenu) return;
     isDrawing = true;
     const pos = getPos(e);
-    ctx.beginPath();
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    
+    ctx.beginPath(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = document.getElementById('eraserSize').value;
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = document.getElementById('penColor').value;
+      ctx.strokeStyle = config.ink;
       const force = document.getElementById('usePressure').checked && e.pressure > 0 ? e.pressure : 0.5;
       ctx.lineWidth = document.getElementById('lineWidth').value * force;
     }
@@ -223,32 +221,24 @@
       const force = document.getElementById('usePressure').checked && e.pressure > 0 ? e.pressure : 0.5;
       ctx.lineWidth = document.getElementById('lineWidth').value * force;
     }
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    ctx.lineTo(pos.x, pos.y); ctx.stroke();
   }
 
   canvas.addEventListener('pointerdown', startDraw);
   window.addEventListener('pointermove', moveDraw);
   window.addEventListener('pointerup', () => { if(isDrawing) { isDrawing = false; save(); } });
 
-  // --- Bridge & Infrastructure ---
   function resize() {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.scale(dpr, dpr);
-    render();
+    canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px'; canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(dpr, dpr); render();
   }
 
   function save() {
     if (bridge) {
       bridge.saveItemWithPayload({
-        content: {
-          text: JSON.stringify({ ...config, imageData: canvas.toDataURL("image/png") }),
-          preview_title: "Quill Sketch"
-        }
+        content: { text: JSON.stringify({ ...config, imageData: canvas.toDataURL("image/png") }), preview_title: "Quill Sketch" }
       });
     }
   }
@@ -272,28 +262,26 @@
           } catch(e) {}
         }
       });
-    } else { updateUI(); }
+    } else updateUI();
   }
 
   try { bridge = new ComponentRelay({ targetWindow: window }); } catch(e){}
   window.addEventListener('resize', resize);
   resize();
 
-  // Floating Toolbar Drag
+  // Dragging Toolbar
   let off = { x: 0, y: 0 };
-  toolbar.addEventListener('pointerdown', (e) => {
+  toolbar.onpointerdown = (e) => {
     if (e.target.closest('.handle')) {
-      isDraggingMenu = true;
-      off.x = e.clientX - toolbar.offsetLeft; off.y = e.clientY - toolbar.offsetTop;
+      isDraggingMenu = true; off.x = e.clientX - toolbar.offsetLeft; off.y = e.clientY - toolbar.offsetTop;
       toolbar.setPointerCapture(e.pointerId);
     }
-  });
-  toolbar.addEventListener('pointermove', (e) => {
-    if (isDraggingMenu) { toolbar.style.left = (e.clientX - off.x) + 'px'; toolbar.style.top = (e.clientY - off.y) + 'px'; }
-  });
-  toolbar.addEventListener('pointerup', () => isDraggingMenu = false);
+  };
+  toolbar.onpointermove = (e) => { if (isDraggingMenu) { toolbar.style.left = (e.clientX - off.x) + 'px'; toolbar.style.top = (e.clientY - off.y) + 'px'; }};
+  toolbar.onpointerup = () => isDraggingMenu = false;
 
-  document.getElementById('clearBtn').onclick = () => { if(confirm("Clear?")) { ctx.clearRect(0,0,canvas.width,canvas.height); save(); } };
+  document.getElementById('clearBtn').onclick = () => { if(confirm("Clear current sketch?")) { ctx.clearRect(0,0,canvas.width,canvas.height); save(); } };
+  window.onclick = (e) => { if (!e.target.closest('.tool-btn') && !e.target.closest('.popover')) document.querySelectorAll('.popover').forEach(p => p.style.display = 'none'); };
 </script>
 </body>
 </html>
