@@ -7,13 +7,14 @@
   <style>
     :root {
       --paper-white: #fdfcf0;
-      --grid-color: rgba(0, 0, 0, 0.08);
     }
 
     body, html { 
       margin: 0; padding: 0; height: 100%; 
       background: #1a1a1a; overflow: hidden; 
       font-family: sans-serif;
+      /* Prevent system pull-to-refresh and gestures */
+      touch-action: none !important;
     }
 
     #toolbar {
@@ -26,17 +27,15 @@
     #canvas-container {
       height: 100vh; width: 100vw; display: flex; 
       justify-content: center; align-items: flex-start; 
-      overflow: auto; padding-top: 70px;
+      overflow: hidden; padding-top: 70px;
     }
 
     canvas {
       background-color: var(--paper-white);
-      touch-action: none;
+      touch-action: none !important;
       display: block;
+      cursor: crosshair;
     }
-
-    .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px); background-size: 100% 32px; }
-    .tpl-grid { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px); background-size: 28px 28px; }
 
     select { background: #333; color: #eee; border: 1px solid #555; padding: 5px; border-radius: 4px; }
   </style>
@@ -59,12 +58,6 @@
     <option value="white">White</option>
     <option value="yellow">Yellow</option>
   </select>
-
-  <select id="template" onchange="updatePaper()">
-    <option value="blank">Blank</option>
-    <option value="lines">Lines</option>
-    <option value="grid">Grid</option>
-  </select>
 </div>
 
 <div id="canvas-container">
@@ -75,11 +68,11 @@
   const canvas = document.getElementById('hwCanvas');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
-  let noteData = { paper: 'white', template: 'blank', imageData: null };
+  let noteData = { paper: 'white', imageData: null };
 
   const bridge = new ComponentRelay({
     targetWindow: window,
-    onReady: () => { console.log("Quill Ready"); }
+    onReady: () => { console.log("Quill Active"); }
   });
 
   function init() {
@@ -92,64 +85,73 @@
 
   function updatePaper() {
     const paper = document.getElementById('paperColor').value;
-    const tpl = document.getElementById('template').value;
     canvas.style.backgroundColor = paper === 'yellow' ? '#fef9c3' : '#fdfcf0';
-    canvas.className = tpl !== 'blank' ? `tpl-${tpl}` : '';
     noteData.paper = paper;
-    noteData.template = tpl;
   }
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    // Support S-Pen (Pointer) and Finger (Touch)
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
   }
 
   function start(e) {
+    // Force primary pointer or S-Pen tip
     isDrawing = true;
     const pos = getPos(e);
+    
     ctx.beginPath();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
     if (document.getElementById('tool').value === 'eraser') {
-      ctx.strokeStyle = canvas.style.backgroundColor || '#fdfcf0';
+      ctx.strokeStyle = (noteData.paper === 'yellow' ? '#fef9c3' : '#fdfcf0');
       ctx.lineWidth = 40;
     } else {
       ctx.strokeStyle = document.getElementById('penColor').value;
-      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 3 * pressure;
+      // S25U Pressure Fix
+      const p = e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = 4 * p;
     }
+    
     ctx.moveTo(pos.x, pos.y);
+    e.preventDefault();
   }
 
   function move(e) {
     if (!isDrawing) return;
     const pos = getPos(e);
+    
     if (document.getElementById('tool').value === 'pen') {
-      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 3 * pressure;
+      const p = e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = 4 * p;
     }
+    
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
+    e.preventDefault();
   }
 
-  function stop() {
+  function stop(e) {
     if (isDrawing) {
       isDrawing = false;
       save();
     }
   }
 
-  // Samsung S25U S-Pen works best with PointerEvents
-  canvas.addEventListener('pointerdown', start);
-  canvas.addEventListener('pointermove', move);
-  canvas.addEventListener('pointerup', stop);
-  canvas.addEventListener('pointerout', stop);
+  // Use Pointer events exclusively - best for S-Pen
+  canvas.addEventListener('pointerdown', start, { passive: false });
+  canvas.addEventListener('pointermove', move, { passive: false });
+  canvas.addEventListener('pointerup', stop, { passive: false });
+  canvas.addEventListener('pointercancel', stop, { passive: false });
+
+  // Kill default touch behavior to prevent scrolling
+  canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
   function save() {
     bridge.saveItemWithPayload({
