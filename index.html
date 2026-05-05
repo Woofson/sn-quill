@@ -2,161 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script src="https://app.standardnotes.com/component-relay.js"></script>
   <style>
-    :root {
-      --paper-white: #fdfcf0;
-    }
-
-    body, html { 
-      margin: 0; padding: 0; height: 100%; 
-      background: #1a1a1a; overflow: hidden; 
-      font-family: sans-serif;
-      /* Prevent system pull-to-refresh and gestures */
-      touch-action: none !important;
-    }
-
+    body { margin: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; touch-action: none; }
     #toolbar {
       position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-      background: #222; padding: 8px 15px; border-radius: 25px; 
-      display: flex; gap: 10px; z-index: 100; border: 1px solid #444;
-      align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      background: #222; padding: 10px; border-radius: 20px; z-index: 10;
+      display: flex; gap: 10px; border: 1px solid #444;
     }
-
-    #canvas-container {
-      height: 100vh; width: 100vw; display: flex; 
-      justify-content: center; align-items: flex-start; 
-      overflow: hidden; padding-top: 70px;
-    }
-
-    canvas {
-      background-color: var(--paper-white);
-      touch-action: none !important;
-      display: block;
-      cursor: crosshair;
-    }
-
-    select { background: #333; color: #eee; border: 1px solid #555; padding: 5px; border-radius: 4px; }
+    #hwCanvas { background: #fdfcf0; display: block; margin: 0 auto; cursor: crosshair; touch-action: none; }
+    select { background: #333; color: white; border: 1px solid #555; padding: 5px; }
   </style>
 </head>
 <body>
 
 <div id="toolbar">
   <select id="penColor">
-    <option value="#18181b">Black</option>
-    <option value="#1e3a8a">Blue</option>
-    <option value="#b91c1c">Red</option>
+    <option value="#000000">Black</option>
+    <option value="#0000FF">Blue</option>
   </select>
-  
-  <select id="tool">
-    <option value="pen">Pen</option>
-    <option value="eraser">Eraser</option>
-  </select>
-
-  <select id="paperColor" onchange="updatePaper()">
-    <option value="white">White</option>
-    <option value="yellow">Yellow</option>
-  </select>
+  <button id="clearBtn" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:4px;">Clear</button>
 </div>
 
-<div id="canvas-container">
-  <canvas id="hwCanvas"></canvas>
-</div>
+<canvas id="hwCanvas"></canvas>
 
 <script>
   const canvas = document.getElementById('hwCanvas');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
-  let noteData = { paper: 'white', imageData: null };
 
+  // Bridge init
   const bridge = new ComponentRelay({
     targetWindow: window,
-    onReady: () => { console.log("Quill Active"); }
+    onReady: () => { console.log("Bridge Ready"); }
   });
 
-  function init() {
-    canvas.width = 850;
-    canvas.height = 1200;
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     ctx.fillStyle = '#fdfcf0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    render();
-  }
-
-  function updatePaper() {
-    const paper = document.getElementById('paperColor').value;
-    canvas.style.backgroundColor = paper === 'yellow' ? '#fef9c3' : '#fdfcf0';
-    noteData.paper = paper;
-  }
-
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
   }
 
   function start(e) {
-    // Force primary pointer or S-Pen tip
     isDrawing = true;
-    const pos = getPos(e);
-    
     ctx.beginPath();
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    if (document.getElementById('tool').value === 'eraser') {
-      ctx.strokeStyle = (noteData.paper === 'yellow' ? '#fef9c3' : '#fdfcf0');
-      ctx.lineWidth = 40;
-    } else {
-      ctx.strokeStyle = document.getElementById('penColor').value;
-      // S25U Pressure Fix
-      const p = e.pressure > 0 ? e.pressure : 0.5;
-      ctx.lineWidth = 4 * p;
-    }
-    
-    ctx.moveTo(pos.x, pos.y);
+    ctx.strokeStyle = document.getElementById('penColor').value;
+    ctx.moveTo(e.clientX, e.clientY);
     e.preventDefault();
   }
 
   function move(e) {
     if (!isDrawing) return;
-    const pos = getPos(e);
-    
-    if (document.getElementById('tool').value === 'pen') {
-      const p = e.pressure > 0 ? e.pressure : 0.5;
-      ctx.lineWidth = 4 * p;
-    }
-    
-    ctx.lineTo(pos.x, pos.y);
+    ctx.lineTo(e.clientX, e.clientY);
     ctx.stroke();
     e.preventDefault();
   }
 
-  function stop(e) {
+  function stop() {
     if (isDrawing) {
       isDrawing = false;
       save();
     }
   }
 
-  // Use Pointer events exclusively - best for S-Pen
-  canvas.addEventListener('pointerdown', start, { passive: false });
-  canvas.addEventListener('pointermove', move, { passive: false });
-  canvas.addEventListener('pointerup', stop, { passive: false });
-  canvas.addEventListener('pointercancel', stop, { passive: false });
+  // Basic Listeners
+  canvas.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', stop);
 
-  // Kill default touch behavior to prevent scrolling
-  canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-  canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  document.getElementById('clearBtn').onclick = () => {
+    ctx.fillStyle = '#fdfcf0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    save();
+  };
 
   function save() {
     bridge.saveItemWithPayload({
       content: {
-        text: JSON.stringify({ ...noteData, imageData: canvas.toDataURL("image/png") }),
+        text: JSON.stringify({ imageData: canvas.toDataURL("image/png") }),
         preview_title: "Quill Sketch"
       }
     });
@@ -177,7 +104,9 @@
     });
   }
 
-  init();
+  window.addEventListener('resize', resize);
+  resize();
+  render();
 </script>
 </body>
 </html>
