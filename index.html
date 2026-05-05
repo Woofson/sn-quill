@@ -6,57 +6,57 @@
   <script src="https://app.standardnotes.com/component-relay.js"></script>
   <style>
     :root {
-      --paper-white: #fdfcf0;
-      --paper-yellow: #fef9c3;
-      --paper-blue: #2b4570;
-      --grid-color: rgba(0, 0, 0, 0.08);
+      --paper-white: #fdfcf0; --paper-yellow: #fef9c3; --paper-blue: #2b4570;
+      --grid-color: rgba(0, 0, 0, 0.08); --accent: #3b82f6;
     }
-
-    body, html { 
-      margin: 0; padding: 0; height: 100%; 
-      background: #1a1a1a; overflow: hidden; 
-      font-family: -apple-system, sans-serif;
-      touch-action: none;
-    }
-
+    body, html { margin: 0; padding: 0; height: 100%; background: #1a1a1a; overflow: hidden; font-family: sans-serif; touch-action: none; }
+    
+    /* Toolbar */
     #toolbar {
-      position: fixed; top: 20px; left: 20px;
-      background: rgba(34, 34, 34, 0.9); backdrop-filter: blur(8px);
-      padding: 10px; border-radius: 12px; 
-      display: flex; gap: 8px; z-index: 100; border: 1px solid #444;
-      align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      cursor: grab; transition: flex-direction 0.2s ease;
+      position: fixed; top: 20px; left: 20px; background: rgba(30, 30, 30, 0.95); 
+      backdrop-filter: blur(10px); padding: 8px; border-radius: 14px; 
+      display: flex; gap: 8px; z-index: 100; border: 1px solid #444; align-items: center;
+    }
+    #toolbar.vertical { flex-direction: column; }
+    .handle { cursor: grab; color: #666; padding: 4px; user-select: none; }
+
+    /* Buttons & Tools */
+    .tool-btn {
+      width: 40px; height: 40px; border-radius: 10px; border: 1px solid #444;
+      background: #333; color: #eee; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; font-size: 18px;
+    }
+    .tool-btn.active { background: var(--accent); border-color: var(--accent); }
+    
+    /* Popovers */
+    .popover {
+      position: absolute; background: #222; border: 1px solid #444; border-radius: 10px;
+      padding: 12px; display: none; flex-direction: column; gap: 10px; z-index: 110;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: white; width: 150px;
+    }
+    .popover label { font-size: 11px; color: #999; text-transform: uppercase; }
+
+    /* Settings Modal */
+    #settingsModal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
+      display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+    }
+    .modal-content {
+      background: #222; width: 85%; max-width: 400px; padding: 25px; 
+      border-radius: 20px; border: 1px solid #444; color: #eee;
     }
 
-    #toolbar.vertical { flex-direction: column; width: auto; }
-    #toolbar:active { cursor: grabbing; }
+    #canvas-container { height: 100vh; width: 100vw; position: relative; }
+    canvas { position: absolute; top: 0; left: 0; touch-action: none; z-index: 5; }
 
-    .handle { 
-      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
-      color: #777; font-size: 18px; margin-right: 4px; user-select: none;
-    }
-    .vertical .handle { margin-right: 0; margin-bottom: 4px; }
-
-    #canvas-container {
-      height: 100vh; width: 100vw; position: relative;
-    }
-
-    canvas {
-      position: absolute; top: 0; left: 0;
-      touch-action: none; display: block; cursor: crosshair; z-index: 5;
-    }
-
-    /* Template Patterns */
+    /* Templates */
     .tpl-lines { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
     .tpl-grid { background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px) !important; background-size: 32px 32px !important; }
     .tpl-dots { background-image: radial-gradient(var(--grid-color) 1.5px, transparent 1.5px) !important; background-size: 32px 32px !important; }
 
-    select, button { 
-      background: #333; color: #eee; border: 1px solid #555; 
-      padding: 6px; border-radius: 6px; font-size: 12px; outline: none; width: 100%;
-    }
-    
-    .btn-icon { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    select { background: #333; color: #eee; border: 1px solid #555; padding: 5px; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -64,34 +64,66 @@
 <div id="toolbar">
   <div class="handle">⠿</div>
   
+  <div id="penBtn" class="tool-btn active" title="Pen (Hold for settings)">✎</div>
+  <div id="eraserBtn" class="tool-btn" title="Eraser (Hold for size)">⌫</div>
+
   <select id="penColor">
     <option value="#18181b">Black</option>
     <option value="#1e3a8a">Blue</option>
     <option value="#b91c1c">Red</option>
     <option value="#e2e8f0">Silver</option>
-    <option value="#ffffff">White</option>
   </select>
 
-  <select id="paperColor" onchange="updateUI()">
-    <option value="white">White</option>
-    <option value="yellow">Post-it</option>
-    <option value="blue">Blue</option>
-  </select>
+  <div id="settingsBtn" class="tool-btn">⚙</div>
+  <div id="clearBtn" class="tool-btn" style="color: #ff5555;">✖</div>
+</div>
 
-  <select id="template" onchange="updateUI()">
-    <option value="blank">Blank</option>
-    <option value="lines">Lines</option>
-    <option value="grid">Grid</option>
-    <option value="dots">Dots</option>
-  </select>
-  
-  <select id="tool">
-    <option value="pen">Pen</option>
-    <option value="eraser">Eraser</option>
-  </select>
+<!-- Long Press Popovers -->
+<div id="penPopover" class="popover">
+  <label>Line Width</label>
+  <input type="range" id="lineWidth" min="1" max="20" value="4">
+  <label>Pressure Sensitivity</label>
+  <div class="row">
+    <span>Active</span>
+    <input type="checkbox" id="usePressure" checked>
+  </div>
+</div>
 
-  <button id="toggleOrient" class="btn-icon" title="Toggle Orientation">⇄</button>
-  <button id="clearBtn" class="btn-icon" style="color: #ff5555;">✖</button>
+<div id="eraserPopover" class="popover">
+  <label>Eraser Size</label>
+  <input type="range" id="eraserSize" min="10" max="100" value="40">
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal">
+  <div class="modal-content">
+    <h3>Quill Settings</h3>
+    <div class="row">
+      <label>Orientation</label>
+      <select id="setOrient">
+        <option value="horiz">Horizontal</option>
+        <option value="vert">Vertical</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Paper Color</label>
+      <select id="paperColor">
+        <option value="white">White</option>
+        <option value="yellow">Post-it</option>
+        <option value="blue">Blue</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Template</label>
+      <select id="template">
+        <option value="blank">Blank</option>
+        <option value="lines">Lines</option>
+        <option value="grid">Grid</option>
+        <option value="dots">Dots</option>
+      </select>
+    </div>
+    <button id="closeSettings" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; border-radius:8px;">Save & Close</button>
+  </div>
 </div>
 
 <div id="canvas-container">
@@ -100,136 +132,121 @@
 
 <script>
   const canvas = document.getElementById('hwCanvas');
-  const container = document.getElementById('canvas-container');
-  const toolbar = document.getElementById('toolbar');
   const ctx = canvas.getContext('2d');
-  let isDrawing = false;
-  let bridge = null;
-  let currentNoteData = { paper: 'white', template: 'blank', orient: 'horiz' };
+  const toolbar = document.getElementById('toolbar');
+  let isDrawing = false, bridge = null;
+  let tool = 'pen', isDraggingMenu = false, pressTimer;
+  let config = { paper: 'white', template: 'blank', orient: 'horiz', pressure: true, width: 4, eraser: 40 };
 
-  // Floating & Dragging Logic
-  let isDraggingMenu = false;
-  let offset = { x: 0, y: 0 };
-
-  toolbar.addEventListener('pointerdown', (e) => {
-    if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
-    isDraggingMenu = true;
-    offset.x = e.clientX - toolbar.offsetLeft;
-    offset.y = e.clientY - toolbar.offsetTop;
-    toolbar.setPointerCapture(e.pointerId);
-  });
-
-  toolbar.addEventListener('pointermove', (e) => {
-    if (!isDraggingMenu) return;
-    toolbar.style.left = (e.clientX - offset.x) + 'px';
-    toolbar.style.top = (e.clientY - offset.y) + 'px';
-  });
-
-  toolbar.addEventListener('pointerup', () => isDraggingMenu = false);
-
-  document.getElementById('toggleOrient').onclick = () => {
-    toolbar.classList.toggle('vertical');
-    currentNoteData.orient = toolbar.classList.contains('vertical') ? 'vert' : 'horiz';
-  };
-
-  try {
-    if (typeof ComponentRelay !== 'undefined') {
-      bridge = new ComponentRelay({
-        targetWindow: window,
-        onReady: () => { console.log("Bridge Active"); }
-      });
-    }
-  } catch (e) { console.warn("Standalone Mode"); }
-
-  function updateUI() {
-    const paper = document.getElementById('paperColor').value;
-    const tpl = document.getElementById('template').value;
-    container.style.backgroundColor = `var(--paper-${paper})`;
-    const gridOpacity = paper === 'blue' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)';
-    document.documentElement.style.setProperty('--grid-color', gridOpacity);
-    container.className = tpl === 'blank' ? '' : `tpl-${tpl}`;
-    currentNoteData.paper = paper;
-    currentNoteData.template = tpl;
+  // --- Logic for Long Press ---
+  function setupLongPress(btn, popover) {
+    const start = (e) => {
+      pressTimer = setTimeout(() => {
+        popover.style.display = 'flex';
+        const rect = btn.getBoundingClientRect();
+        popover.style.left = rect.right + 10 + 'px';
+        popover.style.top = rect.top + 'px';
+      }, 600);
+    };
+    const clear = () => { clearTimeout(pressTimer); };
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', clear);
+    btn.addEventListener('pointerleave', clear);
   }
 
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    ctx.scale(dpr, dpr);
-    render();
+  setupLongPress(document.getElementById('penBtn'), document.getElementById('penPopover'));
+  setupLongPress(document.getElementById('eraserBtn'), document.getElementById('eraserPopover'));
+
+  // Close popovers on click elsewhere
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('.tool-btn') && !e.target.closest('.popover')) {
+      document.querySelectorAll('.popover').forEach(p => p.style.display = 'none');
+    }
+  });
+
+  // --- Toolbar & Modal ---
+  document.getElementById('penBtn').onclick = () => { tool = 'pen'; updateActiveTool(); };
+  document.getElementById('eraserBtn').onclick = () => { tool = 'eraser'; updateActiveTool(); };
+  document.getElementById('settingsBtn').onclick = () => { document.getElementById('settingsModal').style.display = 'flex'; };
+  document.getElementById('closeSettings').onclick = () => { 
+    document.getElementById('settingsModal').style.display = 'none';
+    updateUI();
+    save();
+  };
+
+  function updateActiveTool() {
+    document.getElementById('penBtn').classList.toggle('active', tool === 'pen');
+    document.getElementById('eraserBtn').classList.toggle('active', tool === 'eraser');
+  }
+
+  // --- Core Drawing ---
+  function updateUI() {
+    config.paper = document.getElementById('paperColor').value;
+    config.template = document.getElementById('template').value;
+    config.orient = document.getElementById('setOrient').value;
+    
+    toolbar.className = config.orient === 'vert' ? 'vertical' : '';
+    const container = document.getElementById('canvas-container');
+    container.style.backgroundColor = `var(--paper-${config.paper})`;
+    container.className = config.template === 'blank' ? '' : `tpl-${config.template}`;
+    document.documentElement.style.setProperty('--grid-color', config.paper === 'blue' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
   }
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX || (e.touches && e.touches[0].clientX);
-    const cy = e.clientY || (e.touches && e.touches[0].clientY);
-    return { x: cx - rect.left, y: cy - rect.top };
+    return { x: (e.clientX || e.touches[0].clientX) - rect.left, y: (e.clientY || e.touches[0].clientY) - rect.top };
   }
 
-  function start(e) {
-    if (isDraggingMenu) return;
+  function startDraw(e) {
+    if (e.target !== canvas) return;
     isDrawing = true;
     const pos = getPos(e);
     ctx.beginPath();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (document.getElementById('tool').value === 'eraser') {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    
+    if (tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = 40;
+      ctx.lineWidth = document.getElementById('eraserSize').value;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = document.getElementById('penColor').value;
-      const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 4 * p;
+      const force = document.getElementById('usePressure').checked && e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = document.getElementById('lineWidth').value * force;
     }
     ctx.moveTo(pos.x, pos.y);
-    if (e.cancelable) e.preventDefault();
   }
 
-  function move(e) {
+  function moveDraw(e) {
     if (!isDrawing) return;
     const pos = getPos(e);
-    if (document.getElementById('tool').value === 'pen') {
-      const p = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
-      ctx.lineWidth = 4 * p;
+    if (tool === 'pen') {
+      const force = document.getElementById('usePressure').checked && e.pressure > 0 ? e.pressure : 0.5;
+      ctx.lineWidth = document.getElementById('lineWidth').value * force;
     }
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    if (e.cancelable) e.preventDefault();
   }
 
-  function stop() {
-    if (isDrawing) {
-      isDrawing = false;
-      save();
-    }
+  canvas.addEventListener('pointerdown', startDraw);
+  window.addEventListener('pointermove', moveDraw);
+  window.addEventListener('pointerup', () => { if(isDrawing) { isDrawing = false; save(); } });
+
+  // --- Bridge & Infrastructure ---
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(dpr, dpr);
+    render();
   }
-
-  canvas.addEventListener('pointerdown', start);
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', stop);
-  canvas.addEventListener('touchstart', (e) => { if(e.cancelable) e.preventDefault(); }, {passive: false});
-
-  document.getElementById('clearBtn').onclick = () => {
-    if(confirm("Clear everything?")) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      save();
-    }
-  };
 
   function save() {
     if (bridge) {
       bridge.saveItemWithPayload({
         content: {
-          text: JSON.stringify({ 
-            ...currentNoteData,
-            imageData: canvas.toDataURL("image/png") 
-          }),
+          text: JSON.stringify({ ...config, imageData: canvas.toDataURL("image/png") }),
           preview_title: "Quill Sketch"
         }
       });
@@ -242,16 +259,14 @@
         if (item.content.text) {
           try {
             const data = JSON.parse(item.content.text);
-            if (data.paper) document.getElementById('paperColor').value = data.paper;
-            if (data.template) document.getElementById('template').value = data.template;
-            if (data.orient === 'vert') toolbar.classList.add('vertical');
+            Object.assign(config, data);
+            document.getElementById('paperColor').value = config.paper;
+            document.getElementById('template').value = config.template;
+            document.getElementById('setOrient').value = config.orient;
             updateUI();
             if (data.imageData) {
               const img = new Image();
-              img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-              };
+              img.onload = () => { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0,window.innerWidth,window.innerHeight); };
               img.src = data.imageData;
             }
           } catch(e) {}
@@ -260,8 +275,25 @@
     } else { updateUI(); }
   }
 
+  try { bridge = new ComponentRelay({ targetWindow: window }); } catch(e){}
   window.addEventListener('resize', resize);
   resize();
+
+  // Floating Toolbar Drag
+  let off = { x: 0, y: 0 };
+  toolbar.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.handle')) {
+      isDraggingMenu = true;
+      off.x = e.clientX - toolbar.offsetLeft; off.y = e.clientY - toolbar.offsetTop;
+      toolbar.setPointerCapture(e.pointerId);
+    }
+  });
+  toolbar.addEventListener('pointermove', (e) => {
+    if (isDraggingMenu) { toolbar.style.left = (e.clientX - off.x) + 'px'; toolbar.style.top = (e.clientY - off.y) + 'px'; }
+  });
+  toolbar.addEventListener('pointerup', () => isDraggingMenu = false);
+
+  document.getElementById('clearBtn').onclick = () => { if(confirm("Clear?")) { ctx.clearRect(0,0,canvas.width,canvas.height); save(); } };
 </script>
 </body>
 </html>
