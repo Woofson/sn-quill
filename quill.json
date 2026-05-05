@@ -1,0 +1,10 @@
+{
+  "name": "Quill",
+  "identifier": "ac.arf.quill.sn",
+  "version": "1.0.0",
+  "description": "Precision handwriting plugin.",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "url": "https://woofson.github.io/sn-quill/index.html",
+  "ui_type": "canvas"
+}
